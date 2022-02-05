@@ -93,3 +93,69 @@ func TestFailedUserRead(t *testing.T) {
 		t.Log(err)
 	}
 }
+
+func TestUserUpdate(t *testing.T) {
+	tests := []struct {
+		in       *http.Request
+		password string
+		want     *entity.User
+	}{
+		{
+			in: mux.SetURLVars(httptest.NewRequest(
+				"GET",
+				"http://api.example.com/user/1",
+				strings.NewReader(`{"user":{"name":"Bob","password":"qwerty"}}`),
+			), map[string]string{"user_id": "1"}),
+			password: "qwerty",
+			want: &entity.User{
+				ID:       1,
+				Name:     "Bob",
+				Password: nil,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		got, err := UserUpdate(tt.in)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ok := got.Password.Verify(tt.password)
+		if !ok {
+			t.Fatalf("request.UserUpdate: invalid password")
+		}
+		got.Password = nil
+
+		if !reflect.DeepEqual(tt.want, got) {
+			t.Fatalf("request.UserUpdate: want=%v, got=%v.", tt.want, got)
+		}
+	}
+}
+
+func TestUserDelete(t *testing.T) {
+	tests := []struct {
+		in   *http.Request
+		want entity.UserID
+	}{
+		{
+			in: mux.SetURLVars(httptest.NewRequest(
+				"GET",
+				"http://api.example.com/user/2",
+				nil,
+			), map[string]string{"user_id": "2"}),
+			want: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		got, err := UserDelete(tt.in)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if tt.want != got {
+			t.Fatalf("request.UserDelete: want=%v, got=%v.", tt.want, got)
+		}
+	}
+}

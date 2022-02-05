@@ -4,8 +4,16 @@ up:
 build:
 	docker compose build api
 
+down:
+	docker compose down
+
 coverage: test
 	docker compose run --rm gopher bash -c 'cd src; go tool cover -html=/go/cover/c.out -o=/go/cover/index.html'
+
+init-test:
+	docker compose run --rm -e RAILS_ENV=test migrate db:drop
+	docker compose run --rm -e RAILS_ENV=test migrate db:create
+	docker compose run --rm -e RAILS_ENV=test migrate
 
 test:
 	docker compose run --rm gopher bash -c 'cd src; go test -cover -coverprofile=/go/cover/c.out ./...'

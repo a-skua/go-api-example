@@ -8,3 +8,14 @@ local:
   password: password
   host: db
   port: 3306
+
+test:
+  adapter: mysql2
+  encoding: utf8mb4
+  reconnect: false
+  database: testing
+  pool: 5
+  username: root
+  password: password
+  host: db
+  port: 3306

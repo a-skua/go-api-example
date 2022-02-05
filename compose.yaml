@@ -43,6 +43,11 @@ services:
       - db
   gopher:
     image: golang:1.17
+    environment:
+      TEST_DB_ADDR: db:3306
+      TEST_DB_NAME: testing
+      TEST_DB_USER: root
+      TEST_DB_PASSWORD: password
     volumes:
       - ./src:/go/src
       - ./cover:/go/cover

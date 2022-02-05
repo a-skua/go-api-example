@@ -6,6 +6,10 @@ import (
 	"net/http"
 )
 
+func writeHeader(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+}
+
 func Error(w http.ResponseWriter, statusCode int) error {
 	type Error struct {
 		Status     string `json:"status"`
@@ -21,6 +25,7 @@ func Error(w http.ResponseWriter, statusCode int) error {
 		},
 	}
 
+	writeHeader(w)
 	w.WriteHeader(statusCode)
 	enc := json.NewEncoder(w)
 	err := enc.Encode(&res)

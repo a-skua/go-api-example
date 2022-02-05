@@ -48,3 +48,39 @@ func (r *rdb) UserRead(userid entity.UserID) (*entity.User, error) {
 
 	return user.Entity(), nil
 }
+
+func (r *rdb) UserUpdate(entity *entity.User) (*entity.User, error) {
+	user := model.NewUser(entity)
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("repository UserUpdate: %w", err)
+	}
+
+	err = user.Update(tx)
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("repository UserUpdate: %w", err)
+	}
+
+	tx.Commit()
+	return user.Entity(), nil
+}
+
+func (r *rdb) UserDelete(userid entity.UserID) error {
+	user := &model.User{ID: userid}
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return fmt.Errorf("repository UserDelete: %w", err)
+	}
+
+	err = user.Delete(tx)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("repository UserDelete: %w", err)
+	}
+
+	tx.Commit()
+	return nil
+}

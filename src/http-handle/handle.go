@@ -1,11 +1,13 @@
 package handle
 
 import (
+	"api.example.com/http-handle/response"
 	"api.example.com/pkg/entity"
 	"api.example.com/pkg/repository"
 	"api.example.com/pkg/service"
 	"fmt"
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -36,4 +38,11 @@ func authUser(req *http.Request) (entity.UserID, error) {
 	}
 
 	return entity.UserID(userID), nil
+}
+
+func writeError(w http.ResponseWriter, statusCode int) {
+	err := response.Error(w, http.StatusBadRequest)
+	if err != nil {
+		log.Println(err)
+	}
 }

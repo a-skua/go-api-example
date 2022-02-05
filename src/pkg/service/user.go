@@ -30,3 +30,24 @@ func (u *User) Read(userID, authID entity.UserID) (*entity.User, error) {
 
 	return u.repository.UserRead(userID)
 }
+
+func (u *User) Update(user *entity.User, authID entity.UserID) (*entity.User, error) {
+	if user.ID != authID {
+		return nil, fmt.Errorf("service.User.Update: Unauthorized")
+	}
+
+	err := user.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	return u.repository.UserUpdate(user)
+}
+
+func (u *User) Delete(userID, authID entity.UserID) error {
+	if userID != authID {
+		return fmt.Errorf("service.User.Delete: Unauthorized")
+	}
+
+	return u.repository.UserDelete(userID)
+}

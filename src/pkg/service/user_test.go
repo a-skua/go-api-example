@@ -2,6 +2,7 @@ package service
 
 import (
 	"api.example.com/pkg/entity"
+	"api.example.com/pkg/repository"
 	"errors"
 	"reflect"
 	"testing"
@@ -26,22 +27,8 @@ func (pw plainPassword) Hash() []byte {
 	return []byte(pw)
 }
 
-// mock repository
-type mockRepository struct {
-	user *entity.User
-	err  error
-}
-
-func (r *mockRepository) UserCreate(*entity.User) (*entity.User, error) {
-	return r.user, r.err
-}
-
-func (r *mockRepository) UserRead(entity.UserID) (*entity.User, error) {
-	return r.user, r.err
-}
-
 func TestNewUser(t *testing.T) {
-	r := &mockRepository{}
+	r := &repository.Mock{}
 	want := &User{r}
 	got := NewUser(r)
 	if *want != *got {
@@ -57,7 +44,7 @@ func TestUserCreate(t *testing.T) {
 		want *entity.User
 	}{
 		{
-			&User{&mockRepository{user: &entity.User{
+			&User{&repository.Mock{User: &entity.User{
 				ID:        1,
 				Name:      "Bob",
 				Password:  plainPassword("password"),
@@ -95,16 +82,14 @@ func TestFailedUserCreate(t *testing.T) {
 		in   *entity.User
 	}{
 		{
-			&User{&mockRepository{}},
+			&User{&repository.Mock{}},
 			&entity.User{
 				Name:     "Alice",
 				Password: plainPassword("qwerty"),
 			},
 		},
 		{
-			&User{&mockRepository{
-				err: errors.New("Repository Error"),
-			}},
+			&User{&repository.Mock{Error: errors.New("Repository Error")}},
 			&entity.User{
 				Name:     "Alice",
 				Password: plainPassword("passowrd"),
@@ -129,7 +114,7 @@ func TestUserRead(t *testing.T) {
 		want *entity.User
 	}{
 		{
-			&User{&mockRepository{user: &entity.User{
+			&User{&repository.Mock{User: &entity.User{
 				ID:       1,
 				Name:     "Bob",
 				Password: plainPassword("password"),
@@ -169,7 +154,7 @@ func TestFailedUserRead(t *testing.T) {
 		auth entity.UserID
 	}{
 		{
-			&User{&mockRepository{user: &entity.User{
+			&User{&repository.Mock{User: &entity.User{
 				ID:       1,
 				Name:     "Bob",
 				Password: plainPassword("password"),
@@ -181,9 +166,7 @@ func TestFailedUserRead(t *testing.T) {
 			0,
 		},
 		{
-			&User{&mockRepository{
-				err: errors.New("Repository Error"),
-			}},
+			&User{&repository.Mock{Error: errors.New("Repository Error")}},
 			1,
 			1,
 		},
@@ -191,6 +174,175 @@ func TestFailedUserRead(t *testing.T) {
 
 	for _, tt := range tests {
 		_, err := tt.user.Read(tt.in, tt.auth)
+		if err == nil {
+			t.Fatalf("Expect Error")
+		}
+		t.Log(err)
+	}
+}
+
+func TestUserUpdate(t *testing.T) {
+	tests := []struct {
+		user *User
+		in   *entity.User
+		auth entity.UserID
+		want *entity.User
+	}{
+		{
+			user: &User{&repository.Mock{User: &entity.User{
+				ID:       1,
+				Name:     "Alice",
+				Password: plainPassword("password"),
+				Companies: []*entity.Company{
+					{ID: 1, Name: "GREATE COMPANY"},
+				},
+			}}},
+			in: &entity.User{
+				ID:        1,
+				Name:      "Aclice",
+				Password:  plainPassword("password"),
+				Companies: []*entity.Company{},
+			},
+			auth: 1,
+			want: &entity.User{
+				ID:       1,
+				Name:     "Alice",
+				Password: plainPassword("password"),
+				Companies: []*entity.Company{
+					{ID: 1, Name: "GREATE COMPANY"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		got, err := tt.user.Update(tt.in, tt.auth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !reflect.DeepEqual(tt.want, got) {
+			t.Fatalf("service.User.Read: want=%v, got=%v.", tt.want, got)
+		}
+	}
+}
+
+func TestFailedUserUpdate(t *testing.T) {
+	tests := []struct {
+		user *User
+		in   *entity.User
+		auth entity.UserID
+	}{
+		{
+			user: &User{&repository.Mock{User: &entity.User{
+				ID:       1,
+				Name:     "Alice",
+				Password: plainPassword("password"),
+				Companies: []*entity.Company{
+					{ID: 1, Name: "GREATE COMPANY"},
+				},
+			}}},
+			in: &entity.User{
+				ID:        1,
+				Name:      "Aclice",
+				Password:  plainPassword("password"),
+				Companies: []*entity.Company{},
+			},
+			auth: 2,
+		},
+		{
+			user: &User{&repository.Mock{Error: errors.New("Repository Error")}},
+			in: &entity.User{
+				ID:        1,
+				Name:      "Aclice",
+				Password:  plainPassword("password"),
+				Companies: []*entity.Company{},
+			},
+			auth: 1,
+		},
+		{
+			user: &User{&repository.Mock{User: &entity.User{
+				ID:       1,
+				Name:     "Alice",
+				Password: plainPassword("password"),
+				Companies: []*entity.Company{
+					{ID: 1, Name: "GREATE COMPANY"},
+				},
+			}}},
+			in: &entity.User{
+				ID:        1,
+				Name:      "Aclice",
+				Password:  plainPassword("qwerty"),
+				Companies: []*entity.Company{},
+			},
+			auth: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		_, err := tt.user.Update(tt.in, tt.auth)
+		if err == nil {
+			t.Fatalf("Expect Error")
+		}
+		t.Log(err)
+	}
+}
+
+func TestUserDelete(t *testing.T) {
+	tests := []struct {
+		user *User
+		in   entity.UserID
+		auth entity.UserID
+	}{
+		{
+			user: &User{&repository.Mock{User: &entity.User{
+				ID:       1,
+				Name:     "Bob",
+				Password: plainPassword("password"),
+				Companies: []*entity.Company{
+					{ID: 1, Name: "GREATE COMPANY"},
+				},
+			}}},
+			in:   1,
+			auth: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		err := tt.user.Delete(tt.in, tt.auth)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestFailedUserDelete(t *testing.T) {
+	tests := []struct {
+		user *User
+		in   entity.UserID
+		auth entity.UserID
+	}{
+		{
+			user: &User{&repository.Mock{User: &entity.User{
+				ID:       1,
+				Name:     "Bob",
+				Password: plainPassword("password"),
+				Companies: []*entity.Company{
+					{ID: 1, Name: "GREATE COMPANY"},
+				},
+			}}},
+			in:   1,
+			auth: 2,
+		},
+		{
+			user: &User{&repository.Mock{Error: errors.New("Repository Error")}},
+			in:   1,
+			auth: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		err := tt.user.Delete(tt.in, tt.auth)
 		if err == nil {
 			t.Fatalf("Expect Error")
 		}

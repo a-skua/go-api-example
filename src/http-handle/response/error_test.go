@@ -27,7 +27,7 @@ func TestError(t *testing.T) {
 
 		res := w.Result()
 		got, _ := io.ReadAll(res.Body)
-		defer res.Body.Close()
+		res.Body.Close()
 
 		if !reflect.DeepEqual(tt.want, got) {
 			t.Fatalf("response.user: want=%s, got=%s.", tt.want, got)
