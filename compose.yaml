@@ -1,0 +1,58 @@
+version: "3.8"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./_img/Dockerfile
+    environment:
+      ADDR: :80
+      DB_ADDR: db:3306
+      DB_NAME: api_example
+      DB_USER: root
+      DB_PASSWORD: password
+    ports: []
+    networks:
+      - external-tier
+      - internal-tier
+    depends_on:
+      - db
+  db:
+    image: mysql/mysql-server:8.0
+    environment:
+      MYSQL_DATABASE: api_example
+      MYSQL_ROOT_PASSWORD: password
+    command: |
+      mysqld
+      --general-log=true
+      --general-log-file=/var/lib/mysql/general.log
+    volumes:
+      - ./_img/initdb.d:/docker-entrypoint-initdb.d
+      - mysql:/var/lib/mysql
+    networks:
+      - internal-tier
+  migrate:
+    build:
+      context: .
+      dockerfile: ./_img/migrate.Dockerfile
+    environment:
+      RAILS_ENV: local
+    volumes:
+      - ./_migrate:/home/migrate
+    networks:
+      - internal-tier
+    depends_on:
+      - db
+  gopher:
+    image: golang:1.17
+    volumes:
+      - ./src:/go/src
+      - ./cover:/go/cover
+      - go-pkg:/go/pkg
+    networks:
+      - external-tier
+networks:
+  external-tier: {}
+  internal-tier: {}
+volumes:
+  go-pkg: {}
+  mysql: {}

@@ -23,7 +23,6 @@ I hope you can use it as a reference when implementing the API.
 
 ## 簡易API設計
 今回はREST APIを想定しています。
-下記は、`Method: GET` の場合に取得可能な情報を表しています。
 `user`情報の作成(CREATE)は誰でもできますが、
 更新(UPDATE) 取得(GET) 削除(DELETE)はユーザー本人である必要があります。
 ここでは Header `X-User-Id`と Path `user_id` が一致することによって
@@ -32,7 +31,7 @@ I hope you can use it as a reference when implementing the API.
 会社はユーザーによって作成することができ、
 会社を作成したユーザーは管理者として会社の従業員になります。
 管理者であるユーザーは会社の全てを操作できますが、
-管理者でない従業員には、会社に所属する自身の情報の確認しか許されていません。
+管理者でない従業員は、会社に所属する自身の情報の確認しか許されていません。
 - `/user`: ユーザーを扱う。
   - `POST /user`: `name` は1文字以上、 `password` は8文字以上とする。
     ```json
@@ -126,13 +125,11 @@ I hope you can use it as a reference when implementing the API.
   - `POST /company/{company_id}/groups`: `name` は1文字以上、 `parent` は整数もしくは `null`, `children` は整数リストとする。 Header `X-User-Id` 必須。
     ```json
     {
-      "groups": [
-        {
-          "name": "開発部",
-          "parent": null,
-          "children": [ 2, 3 ]
-        }
-      ]
+      "group": {
+        "name": "開発部",
+        "parent": null,
+        "children": [ 2, 3 ]
+      }
     }
     ```
   - `GET /company/{company_id}/groups/{group_id}`: Header `X-User-Id` 必須。
@@ -157,19 +154,18 @@ I hope you can use it as a reference when implementing the API.
       }
     }
     ```
-  - `PUT /company/{company_id}/groups`: 更新時の条件は作成時と同じ。 Header `X-User-Id` 必須。
+  - `PUT /company/{company_id}/groups/{group_id}`: 更新時の条件は作成時と同じ。 Header `X-User-Id` 必須。
     ```json
     {
-      "groups": [
-        {
-          "name": "開発部",
-          "parent": null,
-          "children": [ 2, 3 ]
-        }
-      ]
+      "group": {
+        "name": "開発部",
+        "parent": null,
+        "children": [ 2, 3 ]
+      }
     }
     ```
-  - `DELETE /company/{company_id}/groups`: Header `X-User-Id` 必須。
+  - `DELETE /company/{company_id}/groups/{group_id}`: Header `X-User-Id` 必須。
+
 - `/company/{company_id}/titles`: 会社の肩書きを扱う。
   - `GET /company/{company_id}/titles`: Header `X-User-Id` 必須。
     ```json
@@ -212,6 +208,7 @@ I hope you can use it as a reference when implementing the API.
     }
     ```
   - `DELETE /company/{company_id}/titles`: Header `X-User-Id` 必須。
+
 - `/company/{company_id}/roles`: サービスにおける役割を扱う。
   - `GET /company/{company_id}/roles`: Header `X-User-Id` 必須。
     ```json
@@ -233,11 +230,11 @@ I hope you can use it as a reference when implementing the API.
       }
     }
     ```
-- `/company/{company_id}/users`: 会社の従業員情報を扱う。
+- `/company/{company_id}/employees`: 会社の従業員情報を扱う。
   - `GET /company/{company_id}/users`: Header `X-User-Id` 必須。
     ```json
     {
-      "users": [
+      "employees": [
         {
           "id": 1,
           "name": "Bob",
@@ -264,11 +261,11 @@ I hope you can use it as a reference when implementing the API.
       ]
     }
     ```
-  - `POST /company/{company_id}/users/{user_id}`: `user_id` は Path による指定。
+  - `POST /company/{company_id}/employees/{user_id}`: `user_id` は Path による指定。
     `roles` は整数リスト、`group` と `title` はそれぞれ整数。 Header `X-User-Id` 必須。
     ```json
     {
-      "user": {
+      "employee": {
         "roles": [ 1 ],
         "information": [
           {
@@ -279,10 +276,10 @@ I hope you can use it as a reference when implementing the API.
       }
     }
     ```
-  - `GET /company/{company_id}/users/{user_id}`: Header `X-User-Id` 必須。
+  - `GET /company/{company_id}/employees/{user_id}`: Header `X-User-Id` 必須。
     ```json
     {
-      "user": {
+      "employee": {
         "id": 1,
         "name": "Bob",
         "password": "*****",
@@ -307,10 +304,10 @@ I hope you can use it as a reference when implementing the API.
       }
     }
     ```
-  - `PUT /company/{company_id}/users/{user_id}`: 更新時の条件は作成時と同じ。 Header `X-User-Id` 必須。
+  - `PUT /company/{company_id}/employees/{user_id}`: 更新時の条件は作成時と同じ。 Header `X-User-Id` 必須。
     ```json
     {
-      "user": {
+      "employee": {
         "roles": [ 1 ],
         "information": [
           {
@@ -321,4 +318,4 @@ I hope you can use it as a reference when implementing the API.
       }
     }
     ```
-  - `DELETE /company/{company_id}/users/{user_id}`: Header `X-User-Id` 必須。
+  - `DELETE /company/{company_id}/employees/{user_id}`: Header `X-User-Id` 必須。
