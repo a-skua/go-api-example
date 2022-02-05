@@ -36,6 +36,10 @@ func (r *mockRepository) UserCreate(*entity.User) (*entity.User, error) {
 	return r.user, r.err
 }
 
+func (r *mockRepository) UserRead(entity.UserID) (*entity.User, error) {
+	return r.user, r.err
+}
+
 func TestNewUser(t *testing.T) {
 	r := &mockRepository{}
 	want := &User{r}
@@ -114,5 +118,82 @@ func TestFailedUserCreate(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expect Error")
 		}
+	}
+}
+
+func TestUserRead(t *testing.T) {
+	tests := []struct {
+		user *User
+		in   entity.UserID
+		auth entity.UserID
+		want *entity.User
+	}{
+		{
+			&User{&mockRepository{user: &entity.User{
+				ID:       1,
+				Name:     "Bob",
+				Password: plainPassword("password"),
+				Companies: []*entity.Company{
+					{ID: 1, Name: "GREATE COMPANY"},
+				},
+			}}},
+			1,
+			1,
+			&entity.User{
+				ID:       1,
+				Name:     "Bob",
+				Password: plainPassword("password"),
+				Companies: []*entity.Company{
+					{ID: 1, Name: "GREATE COMPANY"},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		got, err := tt.user.Read(tt.in, tt.auth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !reflect.DeepEqual(tt.want, got) {
+			t.Fatalf("service.User.Read: want=%v, got=%v.", tt.want, got)
+		}
+	}
+}
+
+func TestFailedUserRead(t *testing.T) {
+	tests := []struct {
+		user *User
+		in   entity.UserID
+		auth entity.UserID
+	}{
+		{
+			&User{&mockRepository{user: &entity.User{
+				ID:       1,
+				Name:     "Bob",
+				Password: plainPassword("password"),
+				Companies: []*entity.Company{
+					{ID: 1, Name: "GREATE COMPANY"},
+				},
+			}}},
+			1,
+			0,
+		},
+		{
+			&User{&mockRepository{
+				err: errors.New("Repository Error"),
+			}},
+			1,
+			1,
+		},
+	}
+
+	for _, tt := range tests {
+		_, err := tt.user.Read(tt.in, tt.auth)
+		if err == nil {
+			t.Fatalf("Expect Error")
+		}
+		t.Log(err)
 	}
 }

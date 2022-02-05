@@ -40,9 +40,41 @@ func (u *user) create(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (user) read(w http.ResponseWriter, req *http.Request) {
-	fmt.Println(req)
-	fmt.Fprintf(w, "read user")
+func (u *user) read(w http.ResponseWriter, req *http.Request) {
+	userID, err := request.UserRead(req)
+	if err != nil {
+		log.Println(err)
+		err := response.Error(w, http.StatusBadRequest)
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	authID, err := authUser(req)
+	if err != nil {
+		log.Println(err)
+		err := response.Error(w, http.StatusBadRequest)
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	user, err := u.service.Read(userID, authID)
+	if err != nil {
+		log.Println(err)
+		err := response.Error(w, http.StatusBadRequest)
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
+	err = response.UserCreate(w, user)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func (user) update(w http.ResponseWriter, req *http.Request) {

@@ -7,17 +7,27 @@ import (
 	"net/http"
 )
 
-func UserCreate(w http.ResponseWriter, user *entity.User) error {
+// user response
+func user(w http.ResponseWriter, user *entity.User) error {
 	type Company struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
+		ID   entity.CompanyID `json:"id"`
+		Name string           `json:"name"`
 	}
 	type User struct {
 		ID        entity.UserID `json:"id"`
 		Name      string        `json:"name"`
 		Password  string        `json:"password"`
-		Companies []Company     `json:"companeis"`
+		Companies []*Company    `json:"companies"`
 	}
+
+	companies := make([]*Company, 0, len(user.Companies))
+	for _, c := range user.Companies {
+		companies = append(companies, &Company{
+			ID:   c.ID,
+			Name: c.Name,
+		})
+	}
+
 	res := struct {
 		User User `json:"user"`
 	}{
@@ -25,7 +35,7 @@ func UserCreate(w http.ResponseWriter, user *entity.User) error {
 			ID:        user.ID,
 			Name:      user.Name,
 			Password:  user.Password.String(),
-			Companies: []Company{},
+			Companies: companies,
 		},
 	}
 
@@ -36,4 +46,12 @@ func UserCreate(w http.ResponseWriter, user *entity.User) error {
 	}
 
 	return nil
+}
+
+func UserCreate(w http.ResponseWriter, u *entity.User) error {
+	return user(w, u)
+}
+
+func UserRead(w http.ResponseWriter, u *entity.User) error {
+	return user(w, u)
 }

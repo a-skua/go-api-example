@@ -1,10 +1,13 @@
 package handle
 
 import (
+	"api.example.com/pkg/entity"
 	"api.example.com/pkg/repository"
 	"api.example.com/pkg/service"
+	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 )
 
 func New(r repository.User) http.Handler {
@@ -23,4 +26,14 @@ func New(r repository.User) http.Handler {
 		}
 	}).Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
 	return mux
+}
+
+// 認証情報の取得
+func authUser(req *http.Request) (entity.UserID, error) {
+	userID, err := strconv.Atoi(req.Header.Get("X-User-Id"))
+	if err != nil {
+		return 0, fmt.Errorf("handle.authUser: %w", err)
+	}
+
+	return entity.UserID(userID), nil
 }

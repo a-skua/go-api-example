@@ -4,3 +4,6 @@ services:
     ports:
       - 8080:80
     environment: {}
+  db:
+    volumes:
+      - mysql:/var/lib/mysql

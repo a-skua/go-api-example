@@ -82,6 +82,3 @@ func (u *User) Validate() error {
 
 	return nil
 }
-
-// Company Entity
-type Company struct{}

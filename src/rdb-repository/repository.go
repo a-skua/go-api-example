@@ -37,3 +37,14 @@ func (r *rdb) UserCreate(entity *entity.User) (*entity.User, error) {
 	tx.Commit()
 	return user.Entity(), nil
 }
+
+func (r *rdb) UserRead(userid entity.UserID) (*entity.User, error) {
+	user := &model.User{ID: userid}
+
+	err := user.Read(r.db)
+	if err != nil {
+		return nil, fmt.Errorf("repository UserRead: %w", err)
+	}
+
+	return user.Entity(), nil
+}

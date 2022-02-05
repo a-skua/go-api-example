@@ -55,3 +55,15 @@ func (u *User) Create(tx *sql.Tx) error {
 	u.UpdatedAt = now
 	return nil
 }
+
+func (u *User) Read(db *sql.DB) error {
+	err := db.QueryRowContext(
+		context.Background(),
+		"select name, password, created_at, updated_at from users where id = ?",
+		u.ID,
+	).Scan(&u.Name, &u.Password, &u.CreatedAt, &u.UpdatedAt)
+	if err != nil {
+		return err
+	}
+	return nil
+}

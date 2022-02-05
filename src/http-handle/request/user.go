@@ -4,7 +4,9 @@ import (
 	"api.example.com/pkg/entity"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 )
 
 func UserCreate(req *http.Request) (*entity.User, error) {
@@ -31,4 +33,14 @@ func UserCreate(req *http.Request) (*entity.User, error) {
 		body.User.Name,
 		password,
 	), nil
+}
+
+func UserRead(req *http.Request) (entity.UserID, error) {
+	vars := mux.Vars(req)
+	id, err := strconv.Atoi(vars["user_id"])
+	if err != nil {
+		return 0, fmt.Errorf("HTTP Request UserRead: %w", err)
+	}
+
+	return entity.UserID(id), nil
 }

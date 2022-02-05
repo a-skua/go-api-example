@@ -30,3 +30,6 @@ rollback:
 
 migrate-tasks:
 	docker compose run --rm migrate -T
+
+e2e:
+	_e2e/test.sh
