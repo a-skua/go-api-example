@@ -22,6 +22,10 @@ func (plainPassword) String() string {
 	return "*****"
 }
 
+func (pw plainPassword) Hash() []byte {
+	return []byte(pw)
+}
+
 // mock repository
 type mockRepository struct {
 	user *entity.User

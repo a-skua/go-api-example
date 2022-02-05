@@ -20,10 +20,26 @@ func (plainPassword) String() string {
 	return "*****"
 }
 
+func (pw plainPassword) Hash() []byte {
+	return []byte(pw)
+}
+
 func TestNewPassword(t *testing.T) {
 	_, err := NewPassword("password")
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPasswordFromHash(t *testing.T) {
+	pw, _ := NewPassword("qwerty")
+	want := &password{
+		hash:   pw.Hash(),
+		length: 8,
+	}
+	got := PasswordFromHash(pw.Hash())
+	if !reflect.DeepEqual(want, got) {
+		t.Fatalf("entity.PasswordFromHash: want=%v, got=%v.", want, got)
 	}
 }
 
@@ -104,6 +120,29 @@ func TestPasswordString(t *testing.T) {
 		got := tt.password.String()
 		if tt.want != got {
 			t.Fatalf("entity.password.Length: want=%v, got=%v.", tt.want, got)
+		}
+	}
+}
+
+func TestPasswordHash(t *testing.T) {
+	tests := []struct {
+		password *password
+		want     []byte
+	}{
+		{
+			password: &password{[]byte("password"), 8},
+			want:     []byte("password"),
+		},
+		{
+			password: &password{[]byte("qwerty"), 6},
+			want:     []byte("qwerty"),
+		},
+	}
+
+	for _, tt := range tests {
+		got := tt.password.Hash()
+		if !reflect.DeepEqual(tt.want, got) {
+			t.Fatalf("entity.password.Hash: want=%v, got=%v.", tt.want, got)
 		}
 	}
 }
