@@ -319,3 +319,54 @@ I hope you can use it as a reference when implementing the API.
     }
     ```
   - `DELETE /company/{company_id}/employees/{user_id}`: Header `X-User-Id` 必須。
+
+## このリポジトリの使い方
+開発によく使うコマンドは `Makefile` にまとめています。
+`make up` で API を実行できます。
+次に、 `make migrate` で DBの初期化を行うことで、実際に API として利用することができます。
+
+### Docker
+開発環境として、`docker comkpose` を利用しています。
+`docker compose` の各サービスの役割は次のとおりです。
+- `api`: API本体。
+- `db`: データベース本体。ここでは `mysql` を使用。
+- `migrate`: データベースのマイグレーションを行うためのコンテナ。
+  ここではマイグレーションツールとして、 `Rails` の `ActiveRecord` を利用している。
+- `gopher`: `go test` や `go fmt` など、 `go` の実行環境用のコンテナ。
+
+### Dirctories
+```
+.
+├── _e2e
+├── _img
+│   └── initdb.d
+├── _migrate
+│   └── db
+│       └── migrate
+├── cover
+└── src
+    ├── cmd
+    ├── env
+    ├── http-handle
+    │   ├── request
+    │   └── response
+    ├── pkg
+    │   ├── entity
+    │   ├── repository
+    │   └── service
+    └── rdb-repository
+        └── model
+```
+- `src`: API のソースファイル群はここにまとめてあります。
+  - `cmd`: API の `main` 関数がここにあります。
+    このファイルから、 `import` されている `packages` を辿ることで、
+    ファイルの全体像を把握できると思います。
+  - `pkg`: API のコア `package` 群です。
+    `pkg` の内部に配置されているコードは HTTP や RDB について知ることはありません。
+  - `http-handle`: HTTP について集約しています。
+  - `rdb-repository`: RDB (今回は MySQL) について集約しています。
+- `cover`: テストのカバレッジはここに出力されます(git の管理対象外です)。
+- `_migrate`: マイグレーションファイルをまとめてあります。
+- `_img`: `Dockerfile` などをまとめてあります。
+- `_e2e`: `e2e` テストファイルをまとめてあります。
+- `_migrate`: マイグレーションファイルをまとめてあります。
