@@ -1,4 +1,4 @@
-package table
+package model
 
 import (
 	"api.example.com/pkg/entity"

@@ -3,7 +3,7 @@ package repository
 import (
 	"api.example.com/pkg/entity"
 	"api.example.com/pkg/repository"
-	"api.example.com/rdb-repository/table"
+	"api.example.com/rdb-repository/model"
 	"database/sql"
 	"fmt"
 )
@@ -21,7 +21,7 @@ func New(db *sql.DB) Repository {
 }
 
 func (r *rdb) UserCreate(entity *entity.User) (*entity.User, error) {
-	user := table.NewUser(entity)
+	user := model.NewUser(entity)
 
 	tx, err := r.db.Begin()
 	if err != nil {
