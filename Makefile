@@ -7,7 +7,7 @@ build:
 down:
 	docker compose down
 
-coverage: test
+cover: test
 	docker compose run --rm gopher bash -c 'cd src; go tool cover -html=/go/cover/c.out -o=/go/cover/index.html'
 
 init-test:
@@ -25,7 +25,7 @@ tidy:
 	docker compose run --rm gopher bash -c 'cd src; go mod tidy'
 
 mysql:
-	docker compose exec db mysql -uroot -p api_example
+	docker compose exec db mysql --default-character-set=utf8mb4 -uroot -p api_example
 
 mysql-log:
 	docker compose exec db tail -f /var/lib/mysql/general.log

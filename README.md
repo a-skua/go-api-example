@@ -216,7 +216,7 @@ I hope you can use it as a reference when implementing the API.
       "roles": [
         {
           "id": 1,
-          "管理者"
+          "name": "管理者"
         }
       ]
     }
@@ -226,7 +226,7 @@ I hope you can use it as a reference when implementing the API.
     {
       "role": {
         "id": 1,
-        "管理者"
+        "name": "管理者"
       }
     }
     ```
@@ -242,7 +242,7 @@ I hope you can use it as a reference when implementing the API.
           "roles": [
             {
               "id": 1,
-              "管理者"
+              "name": "管理者"
             }
           ],
           "information": [
@@ -286,7 +286,7 @@ I hope you can use it as a reference when implementing the API.
         "roles": [
           {
             "id": 1,
-            "管理者"
+            "name": "管理者"
           }
         ],
         "information": [

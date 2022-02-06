@@ -40,13 +40,7 @@ func user(w http.ResponseWriter, user *entity.User) error {
 	}
 
 	writeHeader(w)
-	enc := json.NewEncoder(w)
-	err := enc.Encode(&res)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return json.NewEncoder(w).Encode(&res)
 }
 
 func UserCreate(w http.ResponseWriter, u *entity.User) error {
