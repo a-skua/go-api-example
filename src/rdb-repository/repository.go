@@ -16,7 +16,7 @@ func New(db *sql.DB) repository.Repository {
 	return &rdb{db}
 }
 
-func (r *rdb) Transaction() repository.Tx {
+func (r *rdb) Begin() repository.Tx {
 	return newTx(r.db.Begin())
 }
 
@@ -89,30 +89,30 @@ func (r *rdb) CompanyCreateTx(entity *entity.Company, trans repository.Tx) (*ent
 	company := model.NewCompany(entity)
 	tx, err := castTx(trans)
 	if err != nil {
-		return nil, tx.new(err)
+		return nil, tx.newState(err)
 	}
 
-	err = company.Create(tx.tx)
+	err = company.Create(tx.sql)
 	if err != nil {
-		return nil, tx.new(err)
+		return nil, tx.newState(err)
 	}
 
-	return company.Entity(), tx.new(nil)
+	return company.Entity(), tx.newState(nil)
 }
 
 func (r *rdb) CompanyAddEmployeeTx(cID entity.CompanyID, uID entity.UserID, trans repository.Tx) repository.Tx {
 	ce := model.NewCompanyEmployee(cID, uID)
 	tx, err := castTx(trans)
 	if err != nil {
-		return tx.new(err)
+		return tx.newState(err)
 	}
 
-	err = ce.Create(tx.tx)
+	err = ce.Create(tx.sql)
 	if err != nil {
-		return tx.new(err)
+		return tx.newState(err)
 	}
 
-	return tx.new(nil)
+	return tx.newState(nil)
 }
 
 func (r *rdb) RoleCreateTx(entity *entity.Role, trans repository.Tx) (*entity.Role, repository.Tx) {
@@ -120,44 +120,44 @@ func (r *rdb) RoleCreateTx(entity *entity.Role, trans repository.Tx) (*entity.Ro
 	role := model.NewRole(entity)
 	tx, err := castTx(trans)
 	if err != nil {
-		return nil, tx.new(err)
+		return nil, tx.newState(err)
 	}
 
-	err = role.Create(tx.tx)
+	err = role.Create(tx.sql)
 	if err != nil {
-		return nil, tx.new(err)
+		return nil, tx.newState(err)
 	}
 
 	cr := model.NewCompanyRole(company.ID, role.ID)
-	err = cr.Create(tx.tx)
+	err = cr.Create(tx.sql)
 	if err != nil {
-		return nil, tx.new(err)
+		return nil, tx.newState(err)
 	}
 
-	return role.Entity(company), tx.new(nil)
+	return role.Entity(company), tx.newState(nil)
 }
 
 func (r *rdb) EmployeeAddRoleTx(cID entity.CompanyID, uID entity.UserID, rID entity.RoleID, trans repository.Tx) repository.Tx {
 	tx, err := castTx(trans)
 	if err != nil {
-		return tx.new(err)
+		return tx.newState(err)
 	}
 
-	ce, err := model.FindCompanyEmployeeTx(tx.tx, cID, uID)
+	ce, err := model.FindCompanyEmployeeTx(tx.sql, cID, uID)
 	if err != nil {
-		return tx.new(err)
+		return tx.newState(err)
 	}
 
-	cr, err := model.FindCompanyRoleTx(tx.tx, cID, rID)
+	cr, err := model.FindCompanyRoleTx(tx.sql, cID, rID)
 	if err != nil {
-		return tx.new(err)
+		return tx.newState(err)
 	}
 
 	er := model.NewEmployeeRole(ce.ID, cr.ID)
-	err = er.Create(tx.tx)
+	err = er.Create(tx.sql)
 	if err != nil {
-		return tx.new(err)
+		return tx.newState(err)
 	}
 
-	return tx.new(nil)
+	return tx.newState(nil)
 }

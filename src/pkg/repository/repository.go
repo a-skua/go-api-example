@@ -5,14 +5,14 @@ import (
 )
 
 type Repository interface {
-	transaction
+	Transaction
 	User
 	Company
 }
 
 // transaction を管理
 //
-//     var tx Transaction
+//     var tx Tx
 //     err := tx.Error()
 //     if err != nil {
 //         tx.Rollback()
@@ -25,8 +25,8 @@ type Tx interface {
 	Error() error
 }
 
-type transaction interface {
-	Transaction() Tx
+type Transaction interface {
+	Begin() Tx
 }
 
 type User interface {
@@ -37,7 +37,7 @@ type User interface {
 }
 
 type Company interface {
-	transaction
+	Transaction
 	CompanyCreateTx(*entity.Company, Tx) (*entity.Company, Tx)
 	CompanyAddEmployeeTx(entity.CompanyID, entity.UserID, Tx) Tx
 	RoleCreateTx(*entity.Role, Tx) (*entity.Role, Tx)

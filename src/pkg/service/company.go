@@ -21,7 +21,7 @@ func (c *Company) Create(newCompany *entity.Company, authID entity.UserID) (*ent
 	}
 
 	// トランザクション開始
-	tx := c.repository.Transaction()
+	tx := c.repository.Begin()
 	if err := tx.Error(); err != nil {
 		return nil, fmt.Errorf("service.Company.Create: %w", err)
 	}

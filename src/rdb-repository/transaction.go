@@ -6,57 +6,57 @@ import (
 	"errors"
 )
 
-type transaction struct {
-	tx  *sql.Tx
+type Tx struct {
+	sql *sql.Tx
 	err error
 }
 
-func newTx(tx *sql.Tx, err error) repository.Tx {
-	return &transaction{
-		tx:  tx,
+func newTx(sql *sql.Tx, err error) repository.Tx {
+	return &Tx{
+		sql: sql,
 		err: err,
 	}
 }
 
-func castTx(tran repository.Tx) (*transaction, error) {
-	tx, ok := tran.(*transaction)
+func castTx(tran repository.Tx) (*Tx, error) {
+	tx, ok := tran.(*Tx)
 	if !ok {
-		return nil, errors.New("failed cast tx")
+		return nil, errors.New("failed cast to *Tx")
 	}
 	return tx, nil
 }
 
-func (t *transaction) Rollback() error {
-	if t == nil {
-		return errors.New("*transaction is nil")
+func (tx *Tx) Rollback() error {
+	if tx == nil {
+		return errors.New("*Tx is nil")
 	}
-	if t.tx == nil {
-		return errors.New("*transaction.tx is nil")
+	if tx.sql == nil {
+		return errors.New("*Tx.sql is nil")
 	}
-	return t.tx.Rollback()
+	return tx.sql.Rollback()
 }
 
-func (t *transaction) Commit() error {
-	if t == nil {
-		return errors.New("*transaction is nil")
+func (tx *Tx) Commit() error {
+	if tx == nil {
+		return errors.New("*Tx is nil")
 	}
-	if t.tx == nil {
-		return errors.New("*transaction.tx is nil")
+	if tx.sql == nil {
+		return errors.New("*Tx.slq is nil")
 	}
-	return t.tx.Commit()
+	return tx.sql.Commit()
 }
 
-func (t *transaction) Error() error {
-	if t == nil {
-		return errors.New("*transaction is nil")
+func (tx *Tx) Error() error {
+	if tx == nil {
+		return errors.New("*Tx is nil")
 	}
-	return t.err
+	return tx.err
 }
 
-func (t *transaction) new(err error) *transaction {
-	var tx *sql.Tx
-	if t != nil {
-		tx = t.tx
+func (tx *Tx) newState(err error) *Tx {
+	var sqlTx *sql.Tx
+	if tx != nil {
+		sqlTx = tx.sql
 	}
-	return &transaction{tx, err}
+	return &Tx{sqlTx, err}
 }

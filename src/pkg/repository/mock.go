@@ -13,7 +13,7 @@ type Mock struct {
 	Tx      Tx
 }
 
-func (r *Mock) Transaction() Tx {
+func (r *Mock) Begin() Tx {
 	return r.Tx
 }
 
