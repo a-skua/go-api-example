@@ -2,9 +2,7 @@ package handle
 
 import (
 	"api.example.com/http-handle/response"
-	"api.example.com/pkg/entity"
-	"api.example.com/pkg/repository"
-	"api.example.com/pkg/service"
+	"api.example.com/pkg/user"
 	"fmt"
 	"github.com/gorilla/mux"
 	"log"
@@ -12,11 +10,15 @@ import (
 	"strconv"
 )
 
-func New(r repository.Repository) http.Handler {
+type Repository interface {
+	user.Repository
+}
+
+func New(r Repository) http.Handler {
 	mux := mux.NewRouter()
 
 	{
-		user := &user{service.NewUser(r)}
+		user := &userHandle{user.NewService(r)}
 		mux.HandleFunc("/user", user.create).Methods(http.MethodPost)
 		mux.HandleFunc("/user/{user_id:[0-9]+}", func(w http.ResponseWriter, req *http.Request) {
 			switch req.Method {
@@ -29,21 +31,23 @@ func New(r repository.Repository) http.Handler {
 			}
 		}).Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
 	}
-	{
-		company := &company{service.NewCompany(r)}
-		mux.HandleFunc("/company", company.create).Methods(http.MethodPost)
-	}
 	return mux
 }
 
 // 認証情報の取得
-func authUser(req *http.Request) (entity.UserID, error) {
+type auth user.ID
+
+func newAuth(req *http.Request) (auth, error) {
 	userID, err := strconv.Atoi(req.Header.Get("X-User-Id"))
 	if err != nil {
 		return 0, fmt.Errorf("handle.authUser: %w", err)
 	}
 
-	return entity.UserID(userID), nil
+	return auth(userID), nil
+}
+
+func (a auth) verify(userid user.ID) bool {
+	return a == auth(userid)
 }
 
 func writeError(w http.ResponseWriter, statusCode int) {

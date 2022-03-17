@@ -1,52 +1,90 @@
 package handle
 
 import (
-	"api.example.com/pkg/entity"
+	"api.example.com/pkg/user"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func TestAuthUser(t *testing.T) {
-	tests := []struct {
-		in      *http.Request
-		xUserID string
-		want    entity.UserID
-	}{
-		{
-			httptest.NewRequest("GET", "http://api.example.com/user/1", nil),
-			"1",
-			1,
-		},
+func TestNewAuth(t *testing.T) {
+	type test struct {
+		testcase string
+		in       *http.Request
+		xUserID  string
+		wantErr  bool
+		want     auth
 	}
 
-	for _, tt := range tests {
+	do := func(tt test) {
+		t.Logf("testcase: %s", tt.testcase)
+
 		tt.in.Header.Set("X-User-Id", tt.xUserID)
-		got, err := authUser(tt.in)
-		if err != nil {
+		got, err := newAuth(tt.in)
+		if hasErr := err != nil; tt.wantErr != hasErr {
 			t.Fatal(err)
 		}
 
 		if tt.want != got {
-			t.Fatalf("handle.authUser: want=%v, got=%v.", tt.want, got)
+			t.Fatalf("want=%v, got=%v.", tt.want, got)
 		}
 	}
-}
 
-func TestFailedAuthUser(t *testing.T) {
-	tests := []struct {
-		in *http.Request
-	}{
+	tests := []test{
 		{
-			httptest.NewRequest("GET", "http://api.example.com/user/1", nil),
+			testcase: "success",
+			in:       httptest.NewRequest("GET", "http://api.example.com/user/1", nil),
+			xUserID:  "1",
+			wantErr:  false,
+			want:     1,
+		},
+		{
+			testcase: "error",
+			in:       httptest.NewRequest("GET", "http://api.example.com/user/1", nil),
+			xUserID:  "",
+			wantErr:  true,
+			want:     0,
 		},
 	}
 
 	for _, tt := range tests {
-		_, err := authUser(tt.in)
-		if err == nil {
-			t.Fatalf("Expect Errro")
+		do(tt)
+	}
+}
+
+func TestAuthVerify(t *testing.T) {
+	type test struct {
+		testcase string
+		auth     auth
+		in       user.ID
+		want     bool
+	}
+
+	do := func(tt test) {
+		t.Logf("testcase: %s", tt.testcase)
+
+		got := tt.auth.verify(tt.in)
+		if tt.want != got {
+			t.Fatalf("want=%v, got=%v.", tt.want, got)
 		}
-		t.Log(err)
+	}
+
+	tests := []test{
+		{
+			testcase: "success",
+			auth:     1,
+			in:       1,
+			want:     true,
+		},
+		{
+			testcase: "failed",
+			auth:     1,
+			in:       2,
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		do(tt)
 	}
 }

@@ -1,7 +1,7 @@
 package response
 
 import (
-	"api.example.com/pkg/entity"
+	"api.example.com/pkg/user"
 	"io"
 	"net/http/httptest"
 	"reflect"
@@ -11,7 +11,7 @@ import (
 // mock Password
 type plainPassword string
 
-func (pw plainPassword) Verify(plain string) bool {
+func (pw plainPassword) Verify(plain []byte) bool {
 	return pw == plainPassword(plain)
 }
 
@@ -28,37 +28,20 @@ func (pw plainPassword) Hash() []byte {
 }
 
 func TestUserCreate(t *testing.T) {
-	tests := []struct {
-		in   *entity.User
-		want []byte
-	}{
-		{
-			&entity.User{
-				ID:        1,
-				Name:      "Bob",
-				Password:  plainPassword("password"),
-				Companies: []*entity.Company{},
-			},
-			[]byte(`{"user":{"id":1,"name":"Bob","password":"*****","companies":[]}}` + "\n"),
-		},
-		{
-			&entity.User{
-				ID:       2,
-				Name:     "Alice",
-				Password: plainPassword("password"),
-				Companies: []*entity.Company{
-					{ID: 1, Name: "GREATE COMPANY"},
-				},
-			},
-			[]byte(`{"user":{"id":2,"name":"Alice","password":"*****","companies":[{"id":1,"name":"GREATE COMPANY"}]}}` + "\n"),
-		},
+	type test struct {
+		testcase string
+		in       *user.User
+		wantErr  bool
+		want     []byte
 	}
 
-	for _, tt := range tests {
+	do := func(tt test) {
+		t.Logf("testcase: %s", tt.testcase)
+
 		w := httptest.NewRecorder()
 		err := UserCreate(w, tt.in)
-		if err != nil {
-			t.Fatal(err)
+		if hasErr := err != nil; tt.wantErr != hasErr {
+			t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
 		}
 
 		res := w.Result()
@@ -68,41 +51,51 @@ func TestUserCreate(t *testing.T) {
 		if !reflect.DeepEqual(tt.want, got) {
 			t.Fatalf("response.user: want=%s, got=%s.", tt.want, got)
 		}
+	}
+
+	tests := []test{
+		{
+			testcase: "saccess bob",
+			in: &user.User{
+				ID:       1,
+				Name:     "Bob",
+				Password: plainPassword("password"),
+			},
+			wantErr: false,
+			want:    []byte(`{"user":{"id":1,"name":"Bob","password":"*****"}}` + "\n"),
+		},
+		{
+			testcase: "saccess alice",
+			in: &user.User{
+				ID:       2,
+				Name:     "Alice",
+				Password: plainPassword("qwerty"),
+			},
+			wantErr: false,
+			want:    []byte(`{"user":{"id":2,"name":"Alice","password":"*****"}}` + "\n"),
+		},
+	}
+
+	for _, tt := range tests {
+		do(tt)
 	}
 }
 
 func TestUserRead(t *testing.T) {
-	tests := []struct {
-		in   *entity.User
-		want []byte
-	}{
-		{
-			&entity.User{
-				ID:        1,
-				Name:      "Bob",
-				Password:  plainPassword("password"),
-				Companies: []*entity.Company{},
-			},
-			[]byte(`{"user":{"id":1,"name":"Bob","password":"*****","companies":[]}}` + "\n"),
-		},
-		{
-			&entity.User{
-				ID:       2,
-				Name:     "Alice",
-				Password: plainPassword("password"),
-				Companies: []*entity.Company{
-					{ID: 1, Name: "GREATE COMPANY"},
-				},
-			},
-			[]byte(`{"user":{"id":2,"name":"Alice","password":"*****","companies":[{"id":1,"name":"GREATE COMPANY"}]}}` + "\n"),
-		},
+	type test struct {
+		testcase string
+		in       *user.User
+		wantErr  bool
+		want     []byte
 	}
 
-	for _, tt := range tests {
+	do := func(tt test) {
+		t.Logf("testcase: %s", tt.testcase)
+
 		w := httptest.NewRecorder()
 		err := UserRead(w, tt.in)
-		if err != nil {
-			t.Fatal(err)
+		if hasErr := err != nil; tt.wantErr != hasErr {
+			t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
 		}
 
 		res := w.Result()
@@ -112,41 +105,51 @@ func TestUserRead(t *testing.T) {
 		if !reflect.DeepEqual(tt.want, got) {
 			t.Fatalf("response.user: want=%s, got=%s.", tt.want, got)
 		}
+	}
+
+	tests := []test{
+		{
+			testcase: "success bob",
+			in: &user.User{
+				ID:       1,
+				Name:     "Bob",
+				Password: plainPassword("password"),
+			},
+			wantErr: false,
+			want:    []byte(`{"user":{"id":1,"name":"Bob","password":"*****"}}` + "\n"),
+		},
+		{
+			testcase: "success alice",
+			in: &user.User{
+				ID:       2,
+				Name:     "Alice",
+				Password: plainPassword("qwerty"),
+			},
+			wantErr: false,
+			want:    []byte(`{"user":{"id":2,"name":"Alice","password":"*****"}}` + "\n"),
+		},
+	}
+
+	for _, tt := range tests {
+		do(tt)
 	}
 }
 
 func TestUserUpdate(t *testing.T) {
-	tests := []struct {
-		in   *entity.User
-		want []byte
-	}{
-		{
-			&entity.User{
-				ID:        1,
-				Name:      "Bob",
-				Password:  plainPassword("password"),
-				Companies: []*entity.Company{},
-			},
-			[]byte(`{"user":{"id":1,"name":"Bob","password":"*****","companies":[]}}` + "\n"),
-		},
-		{
-			&entity.User{
-				ID:       2,
-				Name:     "Alice",
-				Password: plainPassword("password"),
-				Companies: []*entity.Company{
-					{ID: 1, Name: "GREATE COMPANY"},
-				},
-			},
-			[]byte(`{"user":{"id":2,"name":"Alice","password":"*****","companies":[{"id":1,"name":"GREATE COMPANY"}]}}` + "\n"),
-		},
+	type test struct {
+		testcase string
+		in       *user.User
+		wantErr  bool
+		want     []byte
 	}
 
-	for _, tt := range tests {
+	do := func(tt test) {
+		t.Logf("testcase: %s", tt.testcase)
+
 		w := httptest.NewRecorder()
 		err := UserUpdate(w, tt.in)
-		if err != nil {
-			t.Fatal(err)
+		if hasErr := err != nil; tt.wantErr != hasErr {
+			t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
 		}
 
 		res := w.Result()
@@ -156,23 +159,50 @@ func TestUserUpdate(t *testing.T) {
 		if !reflect.DeepEqual(tt.want, got) {
 			t.Fatalf("response.user: want=%s, got=%s.", tt.want, got)
 		}
+	}
+
+	tests := []test{
+		{
+			testcase: "success bob",
+			in: &user.User{
+				ID:       1,
+				Name:     "Bob",
+				Password: plainPassword("password"),
+			},
+			wantErr: false,
+			want:    []byte(`{"user":{"id":1,"name":"Bob","password":"*****"}}` + "\n"),
+		},
+		{
+			testcase: "success alice",
+			in: &user.User{
+				ID:       2,
+				Name:     "Alice",
+				Password: plainPassword("password"),
+			},
+			wantErr: false,
+			want:    []byte(`{"user":{"id":2,"name":"Alice","password":"*****"}}` + "\n"),
+		},
+	}
+
+	for _, tt := range tests {
+		do(tt)
 	}
 }
 
 func TestUserDelete(t *testing.T) {
-	tests := []struct {
-		want []byte
-	}{
-		{
-			[]byte(`{"user":{}}` + "\n"),
-		},
+	type test struct {
+		testcase string
+		wantErr  bool
+		want     []byte
 	}
 
-	for _, tt := range tests {
+	do := func(tt test) {
+		t.Logf("testcase: %s", tt.testcase)
+
 		w := httptest.NewRecorder()
 		err := UserDelete(w)
-		if err != nil {
-			t.Fatal(err)
+		if hasErr := err != nil; tt.wantErr != hasErr {
+			t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
 		}
 
 		res := w.Result()
@@ -182,5 +212,17 @@ func TestUserDelete(t *testing.T) {
 		if !reflect.DeepEqual(tt.want, got) {
 			t.Fatalf("response.user: want=%s, got=%s.", tt.want, got)
 		}
+	}
+
+	tests := []test{
+		{
+			testcase: "success",
+			wantErr:  false,
+			want:     []byte(`{"user":{}}` + "\n"),
+		},
+	}
+
+	for _, tt := range tests {
+		do(tt)
 	}
 }

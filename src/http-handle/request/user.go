@@ -1,7 +1,7 @@
 package request
 
 import (
-	"api.example.com/pkg/entity"
+	"api.example.com/pkg/user"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-func userValue(req *http.Request) (*entity.User, error) {
+func userValue(req *http.Request) (*user.User, error) {
 	defer req.Body.Close()
 	body := struct {
 		User struct {
@@ -21,65 +21,65 @@ func userValue(req *http.Request) (*entity.User, error) {
 	dec := json.NewDecoder(req.Body)
 	err := dec.Decode(&body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("http-handle/request.userValue: %w", err)
 	}
 
-	password, err := entity.NewPassword(body.User.Password)
+	password, err := user.NewPassword([]byte(body.User.Password))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("http-handle/request.userValue: %w", err)
 	}
 
-	return entity.NewUser(
+	return user.New(
 		body.User.Name,
 		password,
 	), nil
 }
 
-func userKey(req *http.Request) (entity.UserID, error) {
+func userKey(req *http.Request) (user.ID, error) {
 	vars := mux.Vars(req)
 	id, err := strconv.Atoi(vars["user_id"])
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("http-handle/request.userKey: %w", err)
 	}
 
-	return entity.UserID(id), nil
+	return user.ID(id), nil
 }
 
-func UserCreate(req *http.Request) (*entity.User, error) {
+func UserCreate(req *http.Request) (*user.User, error) {
 	user, err := userValue(req)
 	if err != nil {
-		return nil, fmt.Errorf("HTTP Request UserCreate: %w", err)
+		return nil, fmt.Errorf("http-handle/request.UserCreate: %w", err)
 	}
 	return user, nil
 }
 
-func UserRead(req *http.Request) (entity.UserID, error) {
+func UserRead(req *http.Request) (user.ID, error) {
 	userID, err := userKey(req)
 	if err != nil {
-		return 0, fmt.Errorf("HTTP Request UserRead: %w", err)
+		return 0, fmt.Errorf("http-handle/request.UserRead: %w", err)
 	}
 	return userID, nil
 }
 
-func UserUpdate(req *http.Request) (*entity.User, error) {
+func UserUpdate(req *http.Request) (*user.User, error) {
 	userID, err := userKey(req)
 	if err != nil {
-		return nil, fmt.Errorf("HTTP Request UserUpdate: %w", err)
+		return nil, fmt.Errorf("http-handle/request.UserUpdate: %w", err)
 	}
 
 	user, err := userValue(req)
 	if err != nil {
-		return nil, fmt.Errorf("HTTP Request UserUpdate: %w", err)
+		return nil, fmt.Errorf("http-handle/request.UserUpdate: %w", err)
 	}
 
 	user.ID = userID
 	return user, nil
 }
 
-func UserDelete(req *http.Request) (entity.UserID, error) {
+func UserDelete(req *http.Request) (user.ID, error) {
 	userID, err := userKey(req)
 	if err != nil {
-		return 0, fmt.Errorf("HTTP Request UserDelete: %w", err)
+		return 0, fmt.Errorf("http-handle/request.UserDelete: %w", err)
 	}
 	return userID, nil
 }

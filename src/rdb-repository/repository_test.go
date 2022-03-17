@@ -4,10 +4,12 @@ import (
 	"api.example.com/env"
 	"database/sql"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	"reflect"
 	"testing"
 )
 
-// テスト用DB
+// mock
 func newDB() *sql.DB {
 	addr := env.Get("TEST_DB_ADDR")
 	name := env.Get("TEST_DB_NAME")
@@ -28,18 +30,81 @@ func newDB() *sql.DB {
 	return db
 }
 
-func TestUserCreate(t *testing.T) {
-	// TODO
+// test
+func TestNew(t *testing.T) {
+	type test struct {
+		testcase string
+		db       *sql.DB
+		want     Repository
+	}
+
+	do := func(tt test) {
+		defer tt.db.Close()
+
+		t.Logf("testcase: %s", tt.testcase)
+
+		got := func() *rdb {
+			tmp := New(tt.db)
+			got, ok := tmp.(*rdb)
+			if !ok {
+				t.Fatalf("type want=%T, got=%T.", got, tmp)
+			}
+			return got
+		}()
+
+		if !reflect.DeepEqual(tt.want, got) {
+			t.Fatalf("want=%v, got=%v.", tt.want, got)
+		}
+	}
+
+	tests := []test{
+		func() test {
+			db := newDB()
+
+			return test{
+				testcase: "success",
+				db:       db,
+				want: &rdb{
+					db: db,
+				},
+			}
+		}(),
+	}
+
+	for _, tt := range tests {
+		do(tt)
+	}
 }
 
-func TestUserRead(t *testing.T) {
-	// TODO
-}
+func TestRepositoryClose(t *testing.T) {
+	type test struct {
+		testcase   string
+		repository Repository
+		wantErr    bool
+	}
 
-func TestUserUpdate(t *testing.T) {
-	// TODO
-}
+	do := func(tt test) {
+		t.Logf("testcase: %s", tt.testcase)
 
-func TestUserDelete(t *testing.T) {
-	// TODO
+		err := tt.repository.Close()
+		if hasErr := err != nil; tt.wantErr != hasErr {
+			t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
+		}
+	}
+
+	tests := []test{
+		func() test {
+			db := newDB()
+
+			return test{
+				testcase:   "success 1",
+				repository: &rdb{db: db},
+				wantErr:    false,
+			}
+		}(),
+	}
+
+	for _, tt := range tests {
+		do(tt)
+	}
 }

@@ -8,21 +8,20 @@ import (
 )
 
 func TestError(t *testing.T) {
-	tests := []struct {
-		in   int
-		want []byte
-	}{
-		{
-			400,
-			[]byte(`{"error":{"status":"Bad Request","status_code":400}}` + "\n"),
-		},
+	type test struct {
+		testcase string
+		in       int
+		wantErr  bool
+		want     []byte
 	}
 
-	for _, tt := range tests {
+	do := func(tt test) {
+		t.Logf("testcase: %s", tt.testcase)
+
 		w := httptest.NewRecorder()
 		err := Error(w, tt.in)
-		if err != nil {
-			t.Fatal(err)
+		if hasErr := err != nil; tt.wantErr != hasErr {
+			t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
 		}
 
 		res := w.Result()
@@ -32,5 +31,18 @@ func TestError(t *testing.T) {
 		if !reflect.DeepEqual(tt.want, got) {
 			t.Fatalf("response.user: want=%s, got=%s.", tt.want, got)
 		}
+	}
+
+	tests := []test{
+		{
+			testcase: "success",
+			in:       400,
+			wantErr:  false,
+			want:     []byte(`{"error":{"status":"Bad Request","status_code":400}}` + "\n"),
+		},
+	}
+
+	for _, tt := range tests {
+		do(tt)
 	}
 }

@@ -54,6 +54,7 @@ services:
       - go-pkg:/go/pkg
     networks:
       - external-tier
+      - internal-tier
 networks:
   external-tier: {}
   internal-tier: {}

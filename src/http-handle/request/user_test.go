@@ -1,7 +1,7 @@
 package request
 
 import (
-	"api.example.com/pkg/entity"
+	"api.example.com/pkg/user"
 	"github.com/gorilla/mux"
 	"net/http"
 	"net/http/httptest"
@@ -11,151 +11,197 @@ import (
 )
 
 func TestUserCreate(t *testing.T) {
-	tests := []struct {
+	type test struct {
+		testcase string
 		in       *http.Request
-		password string
-		want     *entity.User
-	}{
+		password []byte
+		want     *user.User
+		wantErr  bool
+	}
+
+	do := func(tt test) {
+		t.Logf("testcace: %v", tt.testcase)
+
+		got, err := UserCreate(tt.in)
+		if hasErr := err != nil; tt.wantErr != hasErr {
+			t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
+		}
+
+		if !tt.wantErr {
+			ok := got.Password.Verify(tt.password)
+			if !ok {
+				t.Fatalf("invalid password=%v.", tt.password)
+			}
+			// NOTE
+			// password 検証ができたので比較のために初期化
+			got.Password = nil
+			tt.want.Password = nil
+		}
+
+		if !reflect.DeepEqual(tt.want, got) {
+			t.Fatalf("want=%v, got=%v.", tt.want, got)
+		}
+	}
+
+	tests := []test{
 		{
-			httptest.NewRequest(
+			testcase: "success",
+			in: httptest.NewRequest(
 				"POST",
 				"http://api.example.com/user",
 				strings.NewReader(`{"user":{"name":"Bob","password":"qwerty"}}`),
 			),
-			"qwerty",
-			&entity.User{Name: "Bob", Password: nil}, // TODO Password は DeepEqual の対象としない
+			password: []byte("qwerty"),
+			want:     &user.User{Name: "Bob", Password: nil},
+			wantErr:  false,
 		},
 	}
 
 	for _, tt := range tests {
-		got, err := UserCreate(tt.in)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		ok := got.Password.Verify(tt.password)
-		if !ok {
-			t.Fatalf("request.UserCreate: invalid password")
-		}
-		got.Password = nil // TODO テスト方法を考える
-
-		if !reflect.DeepEqual(tt.want, got) {
-			t.Fatalf("request.UserCreate: want=%v, got=%v.", tt.want, got)
-		}
+		do(tt)
 	}
 }
 
 func TestUserRead(t *testing.T) {
-	tests := []struct {
-		in   *http.Request
-		want entity.UserID
-	}{
+	type test struct {
+		testcase string
+		in       *http.Request
+		want     user.ID
+		wantErr  bool
+	}
+
+	do := func(tt test) {
+		t.Logf("testcace: %v", tt.testcase)
+
+		got, err := UserRead(tt.in)
+		if hasErr := err != nil; tt.wantErr != hasErr {
+			t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
+		}
+
+		if tt.want != got {
+			t.Fatalf("want=%v, got=%v.", tt.want, got)
+		}
+	}
+
+	tests := []test{
 		{
-			mux.SetURLVars(httptest.NewRequest(
+			testcase: "success",
+			in: mux.SetURLVars(httptest.NewRequest(
 				"GET",
 				"http://api.example.com/user/1",
 				nil,
 			), map[string]string{"user_id": "1"}),
-			1,
+			want:    1,
+			wantErr: false,
 		},
-	}
-
-	for _, tt := range tests {
-		got, err := UserRead(tt.in)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if tt.want != got {
-			t.Fatalf("request.UserRead: want=%v, got=%v.", tt.want, got)
-		}
-	}
-}
-
-func TestFailedUserRead(t *testing.T) {
-	tests := []struct {
-		in *http.Request
-	}{
 		{
-			httptest.NewRequest(
+			testcase: "error",
+			in: httptest.NewRequest(
 				"GET",
 				"http://api.example.com/user/1",
 				nil,
 			),
+			want:    0,
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
-		_, err := UserRead(tt.in)
-		if err == nil {
-			t.Fatalf("Expect Error")
-		}
-		t.Log(err)
+		do(tt)
 	}
 }
 
 func TestUserUpdate(t *testing.T) {
-	tests := []struct {
+	type test struct {
+		testcase string
 		in       *http.Request
-		password string
-		want     *entity.User
-	}{
+		password []byte
+		want     *user.User
+		wantErr  bool
+	}
+
+	do := func(tt test) {
+		t.Logf("testcace: %v", tt.testcase)
+
+		got, err := UserUpdate(tt.in)
+		if hasErr := err != nil; tt.wantErr != hasErr {
+			t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
+		}
+
+		if !tt.wantErr {
+			ok := got.Password.Verify(tt.password)
+			if !ok {
+				t.Fatalf("invalid password=%v.", tt.password)
+			}
+			// NOTE
+			// password 検証ができたので比較のために初期化
+			got.Password = nil
+			tt.want.Password = nil
+		}
+
+		if !reflect.DeepEqual(tt.want, got) {
+			t.Fatalf("want=%v, got=%v.", tt.want, got)
+		}
+	}
+
+	tests := []test{
 		{
+			testcase: "success",
 			in: mux.SetURLVars(httptest.NewRequest(
 				"GET",
 				"http://api.example.com/user/1",
 				strings.NewReader(`{"user":{"name":"Bob","password":"qwerty"}}`),
 			), map[string]string{"user_id": "1"}),
-			password: "qwerty",
-			want: &entity.User{
+			password: []byte("qwerty"),
+			want: &user.User{
 				ID:       1,
 				Name:     "Bob",
 				Password: nil,
 			},
+			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
-		got, err := UserUpdate(tt.in)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		ok := got.Password.Verify(tt.password)
-		if !ok {
-			t.Fatalf("request.UserUpdate: invalid password")
-		}
-		got.Password = nil
-
-		if !reflect.DeepEqual(tt.want, got) {
-			t.Fatalf("request.UserUpdate: want=%v, got=%v.", tt.want, got)
-		}
+		do(tt)
 	}
 }
 
 func TestUserDelete(t *testing.T) {
-	tests := []struct {
-		in   *http.Request
-		want entity.UserID
-	}{
+	type test struct {
+		testcase string
+		in       *http.Request
+		want     user.ID
+		wantErr  bool
+	}
+
+	do := func(tt test) {
+		t.Logf("testcace: %v", tt.testcase)
+
+		got, err := UserDelete(tt.in)
+		if hasErr := err != nil; tt.wantErr != hasErr {
+			t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
+		}
+
+		if tt.want != got {
+			t.Fatalf("want=%v, got=%v.", tt.want, got)
+		}
+	}
+
+	tests := []test{
 		{
+			testcase: "success",
 			in: mux.SetURLVars(httptest.NewRequest(
 				"GET",
 				"http://api.example.com/user/2",
 				nil,
 			), map[string]string{"user_id": "2"}),
-			want: 2,
+			want:    2,
+			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
-		got, err := UserDelete(tt.in)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if tt.want != got {
-			t.Fatalf("request.UserDelete: want=%v, got=%v.", tt.want, got)
-		}
+		do(tt)
 	}
 }

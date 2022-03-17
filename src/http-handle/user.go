@@ -3,16 +3,16 @@ package handle
 import (
 	"api.example.com/http-handle/request"
 	"api.example.com/http-handle/response"
-	"api.example.com/pkg/service"
+	"api.example.com/pkg/user"
 	"log"
 	"net/http"
 )
 
-type user struct {
-	service *service.User
+type userHandle struct {
+	service user.Service
 }
 
-func (u *user) create(w http.ResponseWriter, req *http.Request) {
+func (h *userHandle) create(w http.ResponseWriter, req *http.Request) {
 	user, err := request.UserCreate(req)
 	if err != nil {
 		log.Println(err)
@@ -20,7 +20,7 @@ func (u *user) create(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err = u.service.Create(user)
+	user, err = h.service.Create(user)
 	if err != nil {
 		log.Println(err)
 		writeError(w, http.StatusBadRequest)
@@ -33,7 +33,7 @@ func (u *user) create(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (u *user) read(w http.ResponseWriter, req *http.Request) {
+func (h *userHandle) read(w http.ResponseWriter, req *http.Request) {
 	userID, err := request.UserRead(req)
 	if err != nil {
 		log.Println(err)
@@ -41,14 +41,20 @@ func (u *user) read(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	authID, err := authUser(req)
+	auth, err := newAuth(req)
 	if err != nil {
 		log.Println(err)
 		writeError(w, http.StatusBadRequest)
 		return
 	}
+	ok := auth.verify(userID)
+	if !ok {
+		log.Printf("unauthorized user-id=%v.\n", userID)
+		writeError(w, http.StatusForbidden)
+		return
+	}
 
-	user, err := u.service.Read(userID, authID)
+	user, err := h.service.Read(userID)
 	if err != nil {
 		log.Println(err)
 		writeError(w, http.StatusBadRequest)
@@ -61,7 +67,7 @@ func (u *user) read(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (u *user) update(w http.ResponseWriter, req *http.Request) {
+func (h *userHandle) update(w http.ResponseWriter, req *http.Request) {
 	user, err := request.UserUpdate(req)
 	if err != nil {
 		log.Println(err)
@@ -69,14 +75,21 @@ func (u *user) update(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	authID, err := authUser(req)
+	auth, err := newAuth(req)
 	if err != nil {
 		log.Println(err)
 		writeError(w, http.StatusBadRequest)
 		return
 	}
 
-	user, err = u.service.Update(user, authID)
+	ok := auth.verify(user.ID)
+	if !ok {
+		log.Printf("unauthorized user-id=%v.\n", user.ID)
+		writeError(w, http.StatusForbidden)
+		return
+	}
+
+	user, err = h.service.Update(user)
 	if err != nil {
 		log.Println(err)
 		writeError(w, http.StatusBadRequest)
@@ -89,7 +102,7 @@ func (u *user) update(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (u *user) delete(w http.ResponseWriter, req *http.Request) {
+func (h *userHandle) delete(w http.ResponseWriter, req *http.Request) {
 	userID, err := request.UserDelete(req)
 	if err != nil {
 		log.Println(err)
@@ -97,14 +110,21 @@ func (u *user) delete(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	authID, err := authUser(req)
+	auth, err := newAuth(req)
 	if err != nil {
 		log.Println(err)
 		writeError(w, http.StatusBadRequest)
 		return
 	}
 
-	err = u.service.Delete(userID, authID)
+	ok := auth.verify(userID)
+	if !ok {
+		log.Printf("unauthorized user-id=%v.\n", userID)
+		writeError(w, http.StatusForbidden)
+		return
+	}
+
+	err = h.service.Delete(userID)
 	if err != nil {
 		log.Println(err)
 		writeError(w, http.StatusBadRequest)
