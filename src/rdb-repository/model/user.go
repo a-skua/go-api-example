@@ -3,16 +3,15 @@ package model
 import (
 	users "api.example.com/pkg/user"
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 )
 
 type User interface {
-	Create(*sql.Tx) error
-	Read(*sql.DB) error
-	Update(*sql.Tx) error
-	Delete(*sql.Tx) error
+	Create(DB) error
+	Read(DB) error
+	Update(DB) error
+	Delete(DB) error
 	NewEntity() *users.User
 }
 
@@ -46,7 +45,7 @@ func (u *user) NewEntity() *users.User {
 	}
 }
 
-func (u *user) Create(tx *sql.Tx) error {
+func (u *user) Create(tx DB) error {
 	now := time.Now()
 	result, err := tx.ExecContext(
 		context.Background(),
@@ -71,7 +70,7 @@ func (u *user) Create(tx *sql.Tx) error {
 	return nil
 }
 
-func (u *user) Read(db *sql.DB) error {
+func (u *user) Read(db DB) error {
 	err := db.QueryRowContext(
 		context.Background(),
 		"select name, password, created_at, updated_at from users where id = ?",
@@ -83,7 +82,7 @@ func (u *user) Read(db *sql.DB) error {
 	return nil
 }
 
-func (u *user) Update(tx *sql.Tx) error {
+func (u *user) Update(tx DB) error {
 	now := time.Now()
 	result, err := tx.ExecContext(
 		context.Background(),
@@ -110,7 +109,7 @@ func (u *user) Update(tx *sql.Tx) error {
 	return nil
 }
 
-func (u *user) Delete(tx *sql.Tx) error {
+func (u *user) Delete(tx DB) error {
 	result, err := tx.ExecContext(
 		context.Background(),
 		"delete from users where id=?",

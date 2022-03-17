@@ -15,19 +15,19 @@ type userModel struct {
 	err  error
 }
 
-func (u *userModel) Create(*sql.Tx) error {
+func (u *userModel) Create(model.DB) error {
 	return u.err
 }
 
-func (u *userModel) Read(*sql.DB) error {
+func (u *userModel) Read(model.DB) error {
 	return u.err
 }
 
-func (u *userModel) Update(*sql.Tx) error {
+func (u *userModel) Update(model.DB) error {
 	return u.err
 }
 
-func (u *userModel) Delete(*sql.Tx) error {
+func (u *userModel) Delete(model.DB) error {
 	return u.err
 }
 
