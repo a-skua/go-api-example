@@ -42,7 +42,7 @@ services:
     depends_on:
       - db
   gopher:
-    image: golang:1.17
+    image: golang:1.18
     environment:
       TEST_DB_ADDR: db:3306
       TEST_DB_NAME: testing
