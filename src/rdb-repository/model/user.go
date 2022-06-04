@@ -2,6 +2,7 @@ package model
 
 import (
 	users "api.example.com/pkg/user"
+	"api.example.com/pkg/user/password"
 	"context"
 	"fmt"
 	"time"
@@ -15,9 +16,10 @@ type User interface {
 	NewEntity() *users.User
 }
 
+// impl User
 type user struct {
 	ID        users.ID
-	Name      string
+	Name      users.Name
 	Password  []byte
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -41,7 +43,7 @@ func (u *user) NewEntity() *users.User {
 	return &users.User{
 		ID:       u.ID,
 		Name:     u.Name,
-		Password: users.NewPasswordFromHash(u.Password),
+		Password: password.FromHash(u.Password),
 	}
 }
 

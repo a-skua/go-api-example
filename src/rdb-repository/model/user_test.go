@@ -3,6 +3,7 @@ package model
 import (
 	"api.example.com/env"
 	users "api.example.com/pkg/user"
+	"api.example.com/pkg/user/password"
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -39,24 +40,23 @@ func TestNewUser(t *testing.T) {
 		want     User
 	}
 
-	do := func(tt test) {
-		t.Logf("testcase: %s", tt.testcase)
-
-		got := NewUser(tt.in)
-		if !reflect.DeepEqual(tt.want, got) {
-			t.Fatalf("want=%v, got=%v.", tt.want, got)
-		}
+	do := func(tt *test) {
+		t.Run(tt.testcase, func(t *testing.T) {
+			got := NewUser(tt.in)
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want=%v, got=%v.", tt.want, got)
+			}
+		})
 	}
 
-	tests := []test{
-		func() test {
-			pw, err := users.NewPassword([]byte("password"))
+	tests := []*test{
+		func() *test {
+			pw, err := password.New("password")
 			if err != nil {
 				panic(err)
 			}
 
-			return test{
-				testcase: "success",
+			return &test{
 				in: &users.User{
 					ID:       1,
 					Name:     "bob",
@@ -78,36 +78,35 @@ func TestNewUser(t *testing.T) {
 	}
 }
 
-func TestUserNewEntity(t *testing.T) {
+func TestUser_NewEntity(t *testing.T) {
 	type test struct {
 		testcase string
 		user     User
 		want     *users.User
 	}
 
-	do := func(tt test) {
-		t.Logf("testcase: %s", tt.testcase)
-
-		got := tt.user.NewEntity()
-		if !reflect.DeepEqual(tt.want, got) {
-			t.Fatalf("want=%v, got=%v.", tt.want, got)
-		}
+	do := func(tt *test) {
+		t.Run(tt.testcase, func(t *testing.T) {
+			got := tt.user.NewEntity()
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want=%v, got=%v.", tt.want, got)
+			}
+		})
 	}
 
-	tests := []test{
+	tests := []*test{
 		{
-			testcase: "success",
 			user: &user{
 				ID:        2,
 				Name:      "alice",
-				Password:  []byte("dummy hash!"),
-				CreatedAt: time.Time{},
-				UpdatedAt: time.Time{},
+				Password:  []byte("password hash!"),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			},
 			want: &users.User{
 				ID:       2,
 				Name:     "alice",
-				Password: users.NewPasswordFromHash([]byte("dummy hash!")),
+				Password: password.FromHash([]byte("password hash!")),
 			},
 		},
 	}
@@ -117,72 +116,71 @@ func TestUserNewEntity(t *testing.T) {
 	}
 }
 
-func TestUserCreate(t *testing.T) {
+func TestUser_Create(t *testing.T) {
 	type test struct {
 		testcase string
 		user     *user
 		db       *sql.DB
 	}
 
-	do := func(tt test) {
-		defer tt.db.Close()
+	do := func(tt *test) {
+		t.Run(tt.testcase, func(t *testing.T) {
+			defer tt.db.Close()
 
-		t.Logf("testcase: %s", tt.testcase)
+			tx, err := tt.db.Begin()
+			if err != nil {
+				panic(err)
+			}
+			defer tx.Rollback()
 
-		tx, err := tt.db.Begin()
-		if err != nil {
-			panic(err)
-		}
-		defer tx.Rollback()
-
-		beforeUser := *tt.user
-		err = tt.user.Create(tx)
-		if err != nil {
-			t.Fatalf("err: %v", err)
-		}
-		if reflect.DeepEqual(beforeUser, tt.user) {
-			t.Fatalf("unchanged before=%v,  after=%v", beforeUser, tt.user)
-		}
-
-		rows, err := tx.Query("select * from users")
-		if err != nil {
-			panic(err)
-		}
-
-		want := tt.user
-		got := &user{}
-
-		if rows.Next() {
-			err := rows.Scan(&got.ID, &got.Name, &got.Password, &got.CreatedAt, &got.UpdatedAt)
+			beforeUser := *tt.user
+			err = tt.user.Create(tx)
 			if err != nil {
 				t.Fatalf("err: %v", err)
 			}
-		} else {
-			t.Fatalf("failed create user")
-		}
-
-		{ // NOTE MySQL は micro sec まで?
-			want.CreatedAt = want.CreatedAt.Round(time.Microsecond)
-			want.UpdatedAt = want.UpdatedAt.Round(time.Microsecond)
-			if want.CreatedAt.Equal(got.CreatedAt) && want.UpdatedAt.Equal(got.UpdatedAt) {
-				got.CreatedAt = want.CreatedAt
-				got.UpdatedAt = want.UpdatedAt
-			} else {
-				t.Fatalf("invalid time want=%v, got=%v.", want.CreatedAt, got.CreatedAt)
+			if reflect.DeepEqual(beforeUser, tt.user) {
+				t.Fatalf("unchanged before=%v,  after=%v", beforeUser, tt.user)
 			}
-		}
-		if !reflect.DeepEqual(want, got) {
-			t.Fatalf("want=%v, got=%v.", want, got)
-		}
 
-		if rows.Next() {
-			t.Fatalf("unexpected multiple users")
-		}
+			rows, err := tx.Query("select * from users")
+			if err != nil {
+				panic(err)
+			}
+
+			want := tt.user
+			got := &user{}
+
+			if rows.Next() {
+				err := rows.Scan(&got.ID, &got.Name, &got.Password, &got.CreatedAt, &got.UpdatedAt)
+				if err != nil {
+					t.Fatalf("err: %v", err)
+				}
+			} else {
+				t.Fatalf("failed create user")
+			}
+
+			{ // NOTE MySQL は micro sec まで?
+				want.CreatedAt = want.CreatedAt.Round(time.Microsecond)
+				want.UpdatedAt = want.UpdatedAt.Round(time.Microsecond)
+				if want.CreatedAt.Equal(got.CreatedAt) && want.UpdatedAt.Equal(got.UpdatedAt) {
+					got.CreatedAt = want.CreatedAt
+					got.UpdatedAt = want.UpdatedAt
+				} else {
+					t.Fatalf("invalid time want=%v, got=%v.", want.CreatedAt, got.CreatedAt)
+				}
+			}
+			if !reflect.DeepEqual(want, got) {
+				t.Fatalf("want=%v, got=%v.", want, got)
+			}
+
+			if rows.Next() {
+				t.Fatalf("unexpected multiple users")
+			}
+		})
 	}
 
-	tests := []test{
+	tests := []*test{
 		{
-			testcase: "success",
 			user: &user{
 				Name:     "bob",
 				Password: []byte("password"),
@@ -196,18 +194,18 @@ func TestUserCreate(t *testing.T) {
 	}
 }
 
-func TestUserRead(t *testing.T) {
+func TestUser_Read(t *testing.T) {
 	type test struct {
 		testcase string
 		user     *user
 		db       *sql.DB
 	}
 
-	do := func(tt test) {
+	do := func(tt *test) {
 		// TODO
 	}
 
-	tests := []test{}
+	tests := []*test{}
 
 	for _, tt := range tests {
 		do(tt)
@@ -222,11 +220,11 @@ func TestUserUpdate(t *testing.T) {
 		wantErr  bool
 	}
 
-	do := func(tt test) {
+	do := func(tt *test) {
 		// TODO
 	}
 
-	tests := []test{}
+	tests := []*test{}
 
 	for _, tt := range tests {
 		do(tt)
@@ -240,11 +238,11 @@ func TestUserDelete(t *testing.T) {
 		db       *sql.DB
 	}
 
-	do := func(tt test) {
+	do := func(tt *test) {
 		// TODO
 	}
 
-	tests := []test{}
+	tests := []*test{}
 
 	for _, tt := range tests {
 		do(tt)

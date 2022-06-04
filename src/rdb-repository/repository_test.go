@@ -38,35 +38,25 @@ func TestNew(t *testing.T) {
 		want     Repository
 	}
 
-	do := func(tt test) {
-		defer tt.db.Close()
+	do := func(tt *test) {
+		t.Run(tt.testcase, func(t *testing.T) {
+			defer tt.db.Close()
+			got := New(tt.db)
 
-		t.Logf("testcase: %s", tt.testcase)
-
-		got := func() *rdb {
-			tmp := New(tt.db)
-			got, ok := tmp.(*rdb)
-			if !ok {
-				t.Fatalf("type want=%T, got=%T.", got, tmp)
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want=%v, got=%v.", tt.want, got)
 			}
-			return got
-		}()
+		})
 
-		if !reflect.DeepEqual(tt.want, got) {
-			t.Fatalf("want=%v, got=%v.", tt.want, got)
-		}
 	}
 
-	tests := []test{
-		func() test {
+	tests := []*test{
+		func() *test {
 			db := newDB()
 
-			return test{
-				testcase: "success",
-				db:       db,
-				want: &rdb{
-					db: db,
-				},
+			return &test{
+				db:   db,
+				want: &rdb{db},
 			}
 		}(),
 	}
@@ -76,32 +66,27 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestRepositoryClose(t *testing.T) {
+func TestRDB_Close(t *testing.T) {
 	type test struct {
 		testcase   string
 		repository Repository
 		wantErr    bool
 	}
 
-	do := func(tt test) {
-		t.Logf("testcase: %s", tt.testcase)
-
-		err := tt.repository.Close()
-		if hasErr := err != nil; tt.wantErr != hasErr {
-			t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
-		}
+	do := func(tt *test) {
+		t.Run(tt.testcase, func(t *testing.T) {
+			err := tt.repository.Close()
+			if tt.wantErr != (err != nil) {
+				t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
+			}
+		})
 	}
 
-	tests := []test{
-		func() test {
-			db := newDB()
-
-			return test{
-				testcase:   "success 1",
-				repository: &rdb{db: db},
-				wantErr:    false,
-			}
-		}(),
+	tests := []*test{
+		{
+			repository: &rdb{newDB()},
+			wantErr:    false,
+		},
 	}
 
 	for _, tt := range tests {

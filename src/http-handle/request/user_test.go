@@ -2,58 +2,60 @@ package request
 
 import (
 	"api.example.com/pkg/user"
+	"bytes"
 	"github.com/gorilla/mux"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"strings"
 	"testing"
 )
 
 func TestUserCreate(t *testing.T) {
 	type test struct {
 		testcase string
-		in       *http.Request
-		password []byte
+		body     []byte
+		password string
 		want     *user.User
 		wantErr  bool
 	}
 
-	do := func(tt test) {
-		t.Logf("testcace: %v", tt.testcase)
+	do := func(tt *test) {
+		t.Run(tt.testcase, func(t *testing.T) {
+			r := httptest.NewRequest("POST", "http://api.example.com/user", bytes.NewBuffer(tt.body))
 
-		got, err := UserCreate(tt.in)
-		if hasErr := err != nil; tt.wantErr != hasErr {
-			t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
-		}
-
-		if !tt.wantErr {
-			ok := got.Password.Verify(tt.password)
-			if !ok {
-				t.Fatalf("invalid password=%v.", tt.password)
+			got, err := UserCreate(r)
+			if tt.wantErr != (err != nil) {
+				t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
 			}
-			// NOTE
-			// password 検証ができたので比較のために初期化
-			got.Password = nil
-			tt.want.Password = nil
-		}
 
-		if !reflect.DeepEqual(tt.want, got) {
-			t.Fatalf("want=%v, got=%v.", tt.want, got)
-		}
+			if !tt.wantErr {
+				ok := got.Password.Verify(tt.password)
+				if !ok {
+					t.Fatalf("invalid password=%v.", tt.password)
+				}
+				// NOTE
+				// password 検証ができたので比較のために初期化
+				got.Password = nil
+				tt.want.Password = nil
+			}
+
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want=%v, got=%v.", tt.want, got)
+			}
+		})
 	}
 
-	tests := []test{
+	tests := []*test{
 		{
-			testcase: "success",
-			in: httptest.NewRequest(
-				"POST",
-				"http://api.example.com/user",
-				strings.NewReader(`{"user":{"name":"Bob","password":"qwerty"}}`),
-			),
-			password: []byte("qwerty"),
+			body:     []byte(`{"user":{"name":"Bob","password":"qwerty"}}`),
+			password: "qwerty",
 			want:     &user.User{Name: "Bob", Password: nil},
 			wantErr:  false,
+		},
+		{
+			body:    []byte(""),
+			want:    nil,
+			wantErr: true,
 		},
 	}
 
@@ -65,42 +67,38 @@ func TestUserCreate(t *testing.T) {
 func TestUserRead(t *testing.T) {
 	type test struct {
 		testcase string
-		in       *http.Request
+		url      string
 		want     user.ID
 		wantErr  bool
 	}
 
-	do := func(tt test) {
-		t.Logf("testcace: %v", tt.testcase)
+	do := func(tt *test) {
+		t.Run(tt.testcase, func(t *testing.T) {
+			r := httptest.NewRequest("GET", tt.url, nil)
 
-		got, err := UserRead(tt.in)
-		if hasErr := err != nil; tt.wantErr != hasErr {
-			t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
-		}
+			router := mux.NewRouter()
+			router.HandleFunc("/user/{user_id}", func(w http.ResponseWriter, r *http.Request) {
+				got, err := UserRead(r)
+				if hasErr := err != nil; tt.wantErr != hasErr {
+					t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
+				}
 
-		if tt.want != got {
-			t.Fatalf("want=%v, got=%v.", tt.want, got)
-		}
+				if tt.want != got {
+					t.Fatalf("want=%v, got=%v.", tt.want, got)
+				}
+			})
+			router.ServeHTTP(nil, r)
+		})
 	}
 
-	tests := []test{
+	tests := []*test{
 		{
-			testcase: "success",
-			in: mux.SetURLVars(httptest.NewRequest(
-				"GET",
-				"http://api.example.com/user/1",
-				nil,
-			), map[string]string{"user_id": "1"}),
+			url:     "http://api.example.com/user/1",
 			want:    1,
 			wantErr: false,
 		},
 		{
-			testcase: "error",
-			in: httptest.NewRequest(
-				"GET",
-				"http://api.example.com/user/1",
-				nil,
-			),
+			url:     "http://api.example.com/user/foo",
 			want:    0,
 			wantErr: true,
 		},
@@ -114,51 +112,68 @@ func TestUserRead(t *testing.T) {
 func TestUserUpdate(t *testing.T) {
 	type test struct {
 		testcase string
-		in       *http.Request
-		password []byte
+		url      string
+		body     []byte
+		password string
 		want     *user.User
 		wantErr  bool
 	}
 
 	do := func(tt test) {
-		t.Logf("testcace: %v", tt.testcase)
+		t.Run(tt.testcase, func(t *testing.T) {
+			r := httptest.NewRequest("PUT", tt.url, bytes.NewBuffer(tt.body))
 
-		got, err := UserUpdate(tt.in)
-		if hasErr := err != nil; tt.wantErr != hasErr {
-			t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
-		}
+			router := mux.NewRouter()
+			router.HandleFunc("/user/{user_id}", func(w http.ResponseWriter, r *http.Request) {
+				got, err := UserUpdate(r)
+				if hasErr := err != nil; tt.wantErr != hasErr {
+					t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
+				}
 
-		if !tt.wantErr {
-			ok := got.Password.Verify(tt.password)
-			if !ok {
-				t.Fatalf("invalid password=%v.", tt.password)
-			}
-			// NOTE
-			// password 検証ができたので比較のために初期化
-			got.Password = nil
-			tt.want.Password = nil
-		}
+				if !tt.wantErr {
+					ok := got.Password.Verify(tt.password)
+					if !ok {
+						t.Fatalf("invalid password=%v.", tt.password)
+					}
+					// NOTE
+					// password 検証ができたので比較のために初期化
+					got.Password = nil
+					tt.want.Password = nil
+				}
 
-		if !reflect.DeepEqual(tt.want, got) {
-			t.Fatalf("want=%v, got=%v.", tt.want, got)
-		}
+				if !reflect.DeepEqual(tt.want, got) {
+					t.Fatalf("want=%v, got=%v.", tt.want, got)
+				}
+			})
+			router.ServeHTTP(nil, r)
+		})
 	}
 
 	tests := []test{
 		{
-			testcase: "success",
-			in: mux.SetURLVars(httptest.NewRequest(
-				"GET",
-				"http://api.example.com/user/1",
-				strings.NewReader(`{"user":{"name":"Bob","password":"qwerty"}}`),
-			), map[string]string{"user_id": "1"}),
-			password: []byte("qwerty"),
+			url:      "http://api.example.com/user/1",
+			body:     []byte(`{"user":{"name":"Bob","password":"qwerty"}}`),
+			password: "qwerty",
 			want: &user.User{
 				ID:       1,
 				Name:     "Bob",
 				Password: nil,
 			},
 			wantErr: false,
+		},
+		{
+			testcase: "empty body",
+			url:      "http://api.example.com/user/1",
+			body:     []byte(""),
+			want:     nil,
+			wantErr:  true,
+		},
+		{
+			testcase: "invalid user_id",
+			url:      "http://api.example.com/user/xxx",
+			body:     []byte(`{"user":{"name":"Bob","password":"qwerty"}}`),
+			want:     nil,
+			wantErr:  true,
 		},
 	}
 
@@ -170,7 +185,7 @@ func TestUserUpdate(t *testing.T) {
 func TestUserDelete(t *testing.T) {
 	type test struct {
 		testcase string
-		in       *http.Request
+		url      string
 		want     user.ID
 		wantErr  bool
 	}
@@ -178,26 +193,34 @@ func TestUserDelete(t *testing.T) {
 	do := func(tt test) {
 		t.Logf("testcace: %v", tt.testcase)
 
-		got, err := UserDelete(tt.in)
-		if hasErr := err != nil; tt.wantErr != hasErr {
-			t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
-		}
+		t.Run(tt.testcase, func(t *testing.T) {
+			r := httptest.NewRequest("GET", tt.url, nil)
 
-		if tt.want != got {
-			t.Fatalf("want=%v, got=%v.", tt.want, got)
-		}
+			router := mux.NewRouter()
+			router.HandleFunc("/user/{user_id}", func(w http.ResponseWriter, r *http.Request) {
+				got, err := UserDelete(r)
+				if tt.wantErr != (err != nil) {
+					t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
+				}
+
+				if tt.want != got {
+					t.Fatalf("want=%v, got=%v.", tt.want, got)
+				}
+			})
+			router.ServeHTTP(nil, r)
+		})
 	}
 
 	tests := []test{
 		{
-			testcase: "success",
-			in: mux.SetURLVars(httptest.NewRequest(
-				"GET",
-				"http://api.example.com/user/2",
-				nil,
-			), map[string]string{"user_id": "2"}),
+			url:     "http://api.example.com/user/2",
 			want:    2,
 			wantErr: false,
+		},
+		{
+			url:     "http://api.example.com/user/xxx",
+			want:    0,
+			wantErr: true,
 		},
 	}
 

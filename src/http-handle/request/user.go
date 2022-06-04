@@ -2,6 +2,7 @@ package request
 
 import (
 	"api.example.com/pkg/user"
+	"api.example.com/pkg/user/password"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -9,24 +10,24 @@ import (
 	"strconv"
 )
 
-func userValue(req *http.Request) (*user.User, error) {
-	defer req.Body.Close()
+func parseUserValue(r *http.Request) (*user.User, error) {
+	defer r.Body.Close()
+
 	body := struct {
 		User struct {
-			Name     string `json:"name"`
-			Password string `json:"password"`
+			Name     user.Name `json:"name"`
+			Password string    `json:"password"`
 		} `json:"user"`
 	}{}
 
-	dec := json.NewDecoder(req.Body)
-	err := dec.Decode(&body)
+	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		return nil, fmt.Errorf("http-handle/request.userValue: %w", err)
+		return nil, err
 	}
 
-	password, err := user.NewPassword([]byte(body.User.Password))
+	password, err := password.New(body.User.Password)
 	if err != nil {
-		return nil, fmt.Errorf("http-handle/request.userValue: %w", err)
+		return nil, err
 	}
 
 	return user.New(
@@ -35,18 +36,18 @@ func userValue(req *http.Request) (*user.User, error) {
 	), nil
 }
 
-func userKey(req *http.Request) (user.ID, error) {
-	vars := mux.Vars(req)
+func parseUserID(r *http.Request) (user.ID, error) {
+	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["user_id"])
 	if err != nil {
-		return 0, fmt.Errorf("http-handle/request.userKey: %w", err)
+		return 0, err
 	}
 
 	return user.ID(id), nil
 }
 
 func UserCreate(req *http.Request) (*user.User, error) {
-	user, err := userValue(req)
+	user, err := parseUserValue(req)
 	if err != nil {
 		return nil, fmt.Errorf("http-handle/request.UserCreate: %w", err)
 	}
@@ -54,7 +55,7 @@ func UserCreate(req *http.Request) (*user.User, error) {
 }
 
 func UserRead(req *http.Request) (user.ID, error) {
-	userID, err := userKey(req)
+	userID, err := parseUserID(req)
 	if err != nil {
 		return 0, fmt.Errorf("http-handle/request.UserRead: %w", err)
 	}
@@ -62,12 +63,12 @@ func UserRead(req *http.Request) (user.ID, error) {
 }
 
 func UserUpdate(req *http.Request) (*user.User, error) {
-	userID, err := userKey(req)
+	userID, err := parseUserID(req)
 	if err != nil {
 		return nil, fmt.Errorf("http-handle/request.UserUpdate: %w", err)
 	}
 
-	user, err := userValue(req)
+	user, err := parseUserValue(req)
 	if err != nil {
 		return nil, fmt.Errorf("http-handle/request.UserUpdate: %w", err)
 	}
@@ -77,7 +78,7 @@ func UserUpdate(req *http.Request) (*user.User, error) {
 }
 
 func UserDelete(req *http.Request) (user.ID, error) {
-	userID, err := userKey(req)
+	userID, err := parseUserID(req)
 	if err != nil {
 		return 0, fmt.Errorf("http-handle/request.UserDelete: %w", err)
 	}

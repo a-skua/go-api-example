@@ -10,27 +10,20 @@ func writeHeader(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 }
 
-func Error(w http.ResponseWriter, statusCode int) error {
-	type Error struct {
-		Status     string `json:"status"`
-		StatusCode int    `json:"status_code"`
-	}
+func Error(w http.ResponseWriter, err error) error {
+	type Error struct{}
 
 	res := struct {
 		Error Error `json:"error"`
 	}{
-		Error: Error{
-			Status:     http.StatusText(statusCode),
-			StatusCode: statusCode,
-		},
+		Error: Error{},
 	}
 
 	writeHeader(w)
-	w.WriteHeader(statusCode)
-	enc := json.NewEncoder(w)
-	err := enc.Encode(&res)
+	w.WriteHeader(http.StatusInternalServerError) // TODO
+	err = json.NewEncoder(w).Encode(&res)
 	if err != nil {
-		return fmt.Errorf("HTTP Response Error: %w", err)
+		return fmt.Errorf("http-handle/response.Error: %w", err)
 	}
 
 	return nil
