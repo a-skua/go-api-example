@@ -1,3 +1,4 @@
 compose.override.yaml
 /cover
 .bash_history
+fuzz/

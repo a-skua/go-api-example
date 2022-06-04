@@ -24,7 +24,7 @@ var db *sql.DB
 // サーバーの初期化
 func init() {
 	addr := env.Get("ADDR")
-	log.Println("ADDR", addr)
+	log.Println(addr)
 
 	srv.Addr = addr.Value()
 }
@@ -35,10 +35,10 @@ func init() {
 	name := env.Get("DB_NAME")
 	user := env.Get("DB_USER")
 	password := env.GetSecure("DB_PASSWORD")
-	log.Println("DB_ADDR", addr)
-	log.Println("DB_NAME", name)
-	log.Println("DB_ADDR", user)
-	log.Println("DB_PASSWORD", password)
+	log.Println(addr)
+	log.Println(name)
+	log.Println(user)
+	log.Println(password)
 
 	dsn := fmt.Sprintf(
 		"%s:%s@(%s)/%s?charset=utf8mb4&parseTime=true",

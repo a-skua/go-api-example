@@ -6,40 +6,59 @@ import (
 	"os"
 )
 
+// 環境変数を扱う
 type Env interface {
-	// 表示に利用
+	// ENV_NAME=ENV_VALUE
 	fmt.Stringer
-	// 値の取得に利用
+	Name() string
 	Value() string
 }
 
-type env string
-
-// os.Getenv の Wrap
+// 環境変数の取得
 func Get(name string) Env {
-	return env(os.Getenv(name))
+	return get(name)
 }
 
-func (e env) String() string {
-	return string(e)
+type env struct {
+	name, value string
 }
 
-func (e env) Value() string {
-	return string(e)
+func get(name string) *env {
+	return &env{
+		name:  name,
+		value: os.Getenv(name),
+	}
 }
 
-// ログに情報を残さないようにする
-type secureEnv string
+func (e *env) String() string {
+	return fmt.Sprintf("%s=%s", e.name, e.value)
+}
 
-// os.Getenv の Wrap
+func (e *env) Name() string {
+	return e.name
+}
+
+func (e *env) Value() string {
+	return e.value
+}
+
+// 環境変数の取得
+// ログに値を残したくない場合、こちらを利用する
 func GetSecure(name string) Env {
-	return secureEnv(os.Getenv(name))
+	env := secureEnv(*(get(name)))
+	return &env
 }
 
-func (e secureEnv) String() string {
-	return "*****"
+type secureEnv env
+
+func (e *secureEnv) String() string {
+	return fmt.Sprintf("%s=******", e.name)
 }
 
-func (e secureEnv) Value() string {
-	return string(e)
+func (e *secureEnv) Name() string {
+	return e.name
+}
+
+func (e *secureEnv) Value() string {
+	return e.value
 }
