@@ -8,7 +8,7 @@ down:
 	docker compose down
 
 cover: test
-	docker compose run --rm gopher bash -c 'cd src; go tool cover -html=/go/cover/c.out -o=/go/cover/index.html'
+	docker compose run --rm gopher go tool cover -html=/go/cover/c.out -o=/go/cover/index.html
 
 init-test:
 	docker compose run --rm -e RAILS_ENV=test migrate db:drop
@@ -16,13 +16,13 @@ init-test:
 	docker compose run --rm -e RAILS_ENV=test migrate
 
 test:
-	docker compose run --rm gopher bash -c 'cd src; go test -cover -coverprofile=/go/cover/c.out ./...'
+	docker compose run --rm gopher go test -cover -coverprofile=/go/cover/c.out ./...
 
 fmt:
-	docker compose run --rm gopher bash -c 'cd src; go fmt ./...'
+	docker compose run --rm gopher go fmt ./...
 
 tidy:
-	docker compose run --rm gopher bash -c 'cd src; go mod tidy'
+	docker compose run --rm gopher go mod tidy
 
 mysql:
 	docker compose exec db mysql --default-character-set=utf8mb4 -uroot -p api_example
@@ -40,4 +40,4 @@ migrate-tasks:
 	docker compose run --rm migrate -T
 
 e2e:
-	_e2e/test.sh
+	docker compose run --rm e2e ./test.sh

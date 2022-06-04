@@ -42,12 +42,13 @@ services:
     depends_on:
       - db
   gopher:
-    image: golang:1.17
+    image: golang:1.18
     environment:
       TEST_DB_ADDR: db:3306
       TEST_DB_NAME: testing
       TEST_DB_USER: root
       TEST_DB_PASSWORD: password
+    working_dir: /go/src
     volumes:
       - ./src:/go/src
       - ./cover:/go/cover
@@ -55,6 +56,14 @@ services:
     networks:
       - external-tier
       - internal-tier
+  e2e:
+    build:
+      context: .
+      dockerfile: ./_img/e2e.Dockerfile
+    volumes:
+      - ./_e2e:/home/e2e
+    networks:
+      - external-tier
 networks:
   external-tier: {}
   internal-tier: {}
