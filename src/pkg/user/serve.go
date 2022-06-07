@@ -18,7 +18,7 @@ type Server interface {
 	Delete(ID) error
 }
 
-// impl
+// impl Server
 type server struct {
 	repository Repository
 }
@@ -28,7 +28,7 @@ func NewServer(repo Repository) Server {
 }
 
 func (s *server) Create(u *User) (*User, error) {
-	ok := u.Valid()
+	ok := u.valid()
 	if !ok {
 		return nil, fmt.Errorf("pkg/user.Create: invalid user")
 	}
@@ -56,14 +56,9 @@ func (s *server) Read(id ID) (*User, error) {
 }
 
 func (s *server) Update(u *User) (*User, error) {
-	ok := u.Valid()
+	ok := u.ID.valid() && u.valid()
 	if !ok {
 		return nil, fmt.Errorf("pkg/user.Update: invalid user")
-	}
-
-	ok = u.ID.valid()
-	if !ok {
-		return nil, fmt.Errorf("pkg/user.Update: invalid user_id")
 	}
 
 	u, err := s.repository.UserUpdate(u)

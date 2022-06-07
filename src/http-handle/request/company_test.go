@@ -1,7 +1,7 @@
 package request
 
 import (
-	"api.example.com/pkg/user"
+	"api.example.com/pkg/company"
 	"bytes"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -10,33 +10,22 @@ import (
 	"testing"
 )
 
-func TestUserCreate(t *testing.T) {
+func TestCompanyCreate(t *testing.T) {
 	type test struct {
 		testcase string
 		body     []byte
 		password string
-		want     *user.User
+		want     *company.Company
 		wantErr  bool
 	}
 
 	do := func(tt *test) {
 		t.Run(tt.testcase, func(t *testing.T) {
-			r := httptest.NewRequest("POST", "http://api.example.com/user", bytes.NewBuffer(tt.body))
+			r := httptest.NewRequest("POST", "http://api.example.com/company", bytes.NewBuffer(tt.body))
 
-			got, err := UserCreate(r)
+			got, err := CompanyCreate(r)
 			if tt.wantErr != (err != nil) {
 				t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
-			}
-
-			if !tt.wantErr {
-				ok := got.Password.Verify(tt.password)
-				if !ok {
-					t.Fatalf("invalid password=%v.", tt.password)
-				}
-				// NOTE
-				// password 検証ができたので比較のために初期化
-				got.Password = nil
-				tt.want.Password = nil
 			}
 
 			if !reflect.DeepEqual(tt.want, got) {
@@ -47,15 +36,15 @@ func TestUserCreate(t *testing.T) {
 
 	tests := []*test{
 		{
-			body:     []byte(`{"user":{"name":"Bob","password":"qwerty"}}`),
-			password: "qwerty",
-			want:     &user.User{Name: "Bob", Password: nil},
-			wantErr:  false,
+			body:    []byte(`{"company":{"name":"GREATE COMPANY"}}`),
+			want:    company.New("GREATE COMPANY"),
+			wantErr: false,
 		},
 		{
-			body:    []byte(""),
-			want:    nil,
-			wantErr: true,
+			testcase: "invalid json",
+			body:     []byte(""),
+			want:     nil,
+			wantErr:  true,
 		},
 	}
 
@@ -64,11 +53,11 @@ func TestUserCreate(t *testing.T) {
 	}
 }
 
-func TestUserRead(t *testing.T) {
+func TestCompanyRead(t *testing.T) {
 	type test struct {
 		testcase string
 		url      string
-		want     user.ID
+		want     company.ID
 		wantErr  bool
 	}
 
@@ -77,12 +66,12 @@ func TestUserRead(t *testing.T) {
 			r := httptest.NewRequest("GET", tt.url, nil)
 
 			var (
-				got user.ID
+				got company.ID
 				err error
 			)
 			router := mux.NewRouter()
-			router.HandleFunc("/user/{user_id}", func(w http.ResponseWriter, r *http.Request) {
-				got, err = UserRead(r)
+			router.HandleFunc("/company/{company_id}", func(w http.ResponseWriter, r *http.Request) {
+				got, err = CompanyRead(r)
 			})
 			router.ServeHTTP(nil, r)
 
@@ -98,12 +87,12 @@ func TestUserRead(t *testing.T) {
 
 	tests := []*test{
 		{
-			url:     "http://api.example.com/user/1",
+			url:     "http://api.example.com/company/1",
 			want:    1,
 			wantErr: false,
 		},
 		{
-			url:     "http://api.example.com/user/foo",
+			url:     "http://api.example.com/company/foo",
 			want:    0,
 			wantErr: true,
 		},
@@ -114,13 +103,12 @@ func TestUserRead(t *testing.T) {
 	}
 }
 
-func TestUserUpdate(t *testing.T) {
+func TestCompanyUpdate(t *testing.T) {
 	type test struct {
 		testcase string
 		url      string
 		body     []byte
-		password string
-		want     *user.User
+		want     *company.Company
 		wantErr  bool
 	}
 
@@ -129,28 +117,16 @@ func TestUserUpdate(t *testing.T) {
 			r := httptest.NewRequest("PUT", tt.url, bytes.NewBuffer(tt.body))
 
 			var (
-				got *user.User
+				got *company.Company
 				err error
 			)
 			router := mux.NewRouter()
-			router.HandleFunc("/user/{user_id}", func(w http.ResponseWriter, r *http.Request) {
-				got, err = UserUpdate(r)
+			router.HandleFunc("/company/{company_id}", func(w http.ResponseWriter, r *http.Request) {
+				got, err = CompanyUpdate(r)
 			})
 			router.ServeHTTP(nil, r)
-
 			if hasErr := err != nil; tt.wantErr != hasErr {
 				t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
-			}
-
-			if !tt.wantErr {
-				ok := got.Password.Verify(tt.password)
-				if !ok {
-					t.Fatalf("invalid password=%v.", tt.password)
-				}
-				// NOTE
-				// password 検証ができたので比較のために初期化
-				got.Password = nil
-				tt.want.Password = nil
 			}
 
 			if !reflect.DeepEqual(tt.want, got) {
@@ -161,27 +137,25 @@ func TestUserUpdate(t *testing.T) {
 
 	tests := []test{
 		{
-			url:      "http://api.example.com/user/1",
-			body:     []byte(`{"user":{"name":"Bob","password":"qwerty"}}`),
-			password: "qwerty",
-			want: &user.User{
-				ID:       1,
-				Name:     "Bob",
-				Password: nil,
+			url:  "http://api.example.com/company/1",
+			body: []byte(`{"company":{"name":"GREATE COMPANY"}}`),
+			want: &company.Company{
+				ID:   1,
+				Name: "GREATE COMPANY",
 			},
 			wantErr: false,
 		},
 		{
 			testcase: "empty body",
-			url:      "http://api.example.com/user/1",
+			url:      "http://api.example.com/company/1",
 			body:     []byte(""),
 			want:     nil,
 			wantErr:  true,
 		},
 		{
-			testcase: "invalid user_id",
-			url:      "http://api.example.com/user/xxx",
-			body:     []byte(`{"user":{"name":"Bob","password":"qwerty"}}`),
+			testcase: "invalid company_id",
+			url:      "http://api.example.com/company/xxx",
+			body:     []byte(`{"company":{"name":"GREATE COMPANY"}}`),
 			want:     nil,
 			wantErr:  true,
 		},
@@ -192,11 +166,11 @@ func TestUserUpdate(t *testing.T) {
 	}
 }
 
-func TestUserDelete(t *testing.T) {
+func TestCompanyDelete(t *testing.T) {
 	type test struct {
 		testcase string
 		url      string
-		want     user.ID
+		want     company.ID
 		wantErr  bool
 	}
 
@@ -207,12 +181,12 @@ func TestUserDelete(t *testing.T) {
 			r := httptest.NewRequest("GET", tt.url, nil)
 
 			var (
-				got user.ID
+				got company.ID
 				err error
 			)
 			router := mux.NewRouter()
-			router.HandleFunc("/user/{user_id}", func(w http.ResponseWriter, r *http.Request) {
-				got, err = UserDelete(r)
+			router.HandleFunc("/company/{company_id}", func(w http.ResponseWriter, r *http.Request) {
+				got, err = CompanyDelete(r)
 			})
 			router.ServeHTTP(nil, r)
 
@@ -228,14 +202,15 @@ func TestUserDelete(t *testing.T) {
 
 	tests := []test{
 		{
-			url:     "http://api.example.com/user/2",
+			url:     "http://api.example.com/company/2",
 			want:    2,
 			wantErr: false,
 		},
 		{
-			url:     "http://api.example.com/user/xxx",
-			want:    0,
-			wantErr: true,
+			testcase: "invalid company_id",
+			url:      "http://api.example.com/company/xxx",
+			want:     0,
+			wantErr:  true,
 		},
 	}
 

@@ -50,8 +50,8 @@ func (u *user) NewEntity() *users.User {
 func (u *user) Create(tx DB) error {
 	now := time.Now()
 	result, err := tx.ExecContext(
-		context.Background(),
-		"insert into users(name, password, created_at, updated_at) value (?, ?, ?, ?)",
+		context.TODO(),
+		"insert into `users`(`name`, `password`, `created_at`, `updated_at`) value (?, ?, ?, ?)",
 		u.Name,
 		u.Password,
 		now,
@@ -74,8 +74,8 @@ func (u *user) Create(tx DB) error {
 
 func (u *user) Read(db DB) error {
 	err := db.QueryRowContext(
-		context.Background(),
-		"select name, password, created_at, updated_at from users where id = ?",
+		context.TODO(),
+		"select `name`, `password`, `created_at`, `updated_at` from `users` where `id`=?",
 		u.ID,
 	).Scan(&u.Name, &u.Password, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
@@ -87,8 +87,8 @@ func (u *user) Read(db DB) error {
 func (u *user) Update(tx DB) error {
 	now := time.Now()
 	result, err := tx.ExecContext(
-		context.Background(),
-		"update users set name=?, password=?, updated_at=? where id=?",
+		context.TODO(),
+		"update `users` set `name`=?, `password`=?, `updated_at`=? where `id`=?",
 		u.Name,
 		u.Password,
 		now,
@@ -113,8 +113,8 @@ func (u *user) Update(tx DB) error {
 
 func (u *user) Delete(tx DB) error {
 	result, err := tx.ExecContext(
-		context.Background(),
-		"delete from users where id=?",
+		context.TODO(),
+		"delete from `users` where `id`=?",
 		u.ID,
 	)
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-func parseUserValue(r *http.Request) (*user.User, error) {
+func parseUserBody(r *http.Request) (*user.User, error) {
 	defer r.Body.Close()
 
 	body := struct {
@@ -36,8 +36,9 @@ func parseUserValue(r *http.Request) (*user.User, error) {
 	), nil
 }
 
-func parseUserID(r *http.Request) (user.ID, error) {
+func parseUserPath(r *http.Request) (user.ID, error) {
 	vars := mux.Vars(r)
+
 	id, err := strconv.Atoi(vars["user_id"])
 	if err != nil {
 		return 0, err
@@ -47,7 +48,7 @@ func parseUserID(r *http.Request) (user.ID, error) {
 }
 
 func UserCreate(req *http.Request) (*user.User, error) {
-	user, err := parseUserValue(req)
+	user, err := parseUserBody(req)
 	if err != nil {
 		return nil, fmt.Errorf("http-handle/request.UserCreate: %w", err)
 	}
@@ -55,32 +56,32 @@ func UserCreate(req *http.Request) (*user.User, error) {
 }
 
 func UserRead(req *http.Request) (user.ID, error) {
-	userID, err := parseUserID(req)
+	id, err := parseUserPath(req)
 	if err != nil {
 		return 0, fmt.Errorf("http-handle/request.UserRead: %w", err)
 	}
-	return userID, nil
+	return id, nil
 }
 
 func UserUpdate(req *http.Request) (*user.User, error) {
-	userID, err := parseUserID(req)
+	id, err := parseUserPath(req)
 	if err != nil {
 		return nil, fmt.Errorf("http-handle/request.UserUpdate: %w", err)
 	}
 
-	user, err := parseUserValue(req)
+	user, err := parseUserBody(req)
 	if err != nil {
 		return nil, fmt.Errorf("http-handle/request.UserUpdate: %w", err)
 	}
 
-	user.ID = userID
+	user.ID = id
 	return user, nil
 }
 
 func UserDelete(req *http.Request) (user.ID, error) {
-	userID, err := parseUserID(req)
+	id, err := parseUserPath(req)
 	if err != nil {
 		return 0, fmt.Errorf("http-handle/request.UserDelete: %w", err)
 	}
-	return userID, nil
+	return id, nil
 }

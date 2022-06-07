@@ -37,9 +37,9 @@ func validPassword(p Password) bool {
 }
 
 type User struct {
-	ID       ID
-	Name     Name
-	Password Password
+	ID
+	Name
+	Password
 }
 
 func New(name Name, pw Password) *User {
@@ -49,6 +49,6 @@ func New(name Name, pw Password) *User {
 	}
 }
 
-func (u *User) Valid() bool {
+func (u *User) valid() bool {
 	return u.Name.valid() && validPassword(u.Password)
 }

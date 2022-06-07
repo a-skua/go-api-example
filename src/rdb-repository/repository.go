@@ -1,12 +1,14 @@
 package repository
 
 import (
+	"api.example.com/pkg/company"
 	"api.example.com/pkg/user"
 	"database/sql"
 )
 
 type Repository interface {
 	user.Repository
+	company.Repository
 	Close() error
 }
 
@@ -38,4 +40,20 @@ func (r *rdb) UserUpdate(u *user.User) (*user.User, error) {
 
 func (r *rdb) UserDelete(id user.ID) error {
 	return UserDelete(r.db, id)
+}
+
+func (r *rdb) CompanyCreate(c *company.Company) (*company.Company, error) {
+	return CompanyCreate(r.db, c)
+}
+
+func (r *rdb) CompanyRead(id company.ID) (*company.Company, error) {
+	return CompanyRead(r.db, id)
+}
+
+func (r *rdb) CompanyUpdate(c *company.Company) (*company.Company, error) {
+	return CompanyUpdate(r.db, c)
+}
+
+func (r *rdb) CompanyDelete(id company.ID) error {
+	return CompanyDelete(r.db, id)
 }

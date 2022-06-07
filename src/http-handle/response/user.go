@@ -15,8 +15,8 @@ func writeUser(w http.ResponseWriter, u *user.User) error {
 		Password string    `json:"password"`
 	}
 
-	res := struct {
-		User User `json:"user"`
+	body := struct {
+		User `json:"user"`
 	}{
 		User: User{
 			ID:       u.ID,
@@ -26,11 +26,7 @@ func writeUser(w http.ResponseWriter, u *user.User) error {
 	}
 
 	writeHeader(w)
-	err := json.NewEncoder(w).Encode(&res)
-	if err != nil {
-		return err
-	}
-	return nil
+	return json.NewEncoder(w).Encode(&body)
 }
 
 func UserCreate(w http.ResponseWriter, u *user.User) error {
@@ -61,12 +57,12 @@ func UserUpdate(w http.ResponseWriter, u *user.User) error {
 }
 
 func UserDelete(w http.ResponseWriter) error {
-	res := struct {
+	body := struct {
 		User struct{} `json:"user"`
 	}{}
 
 	writeHeader(w)
-	err := json.NewEncoder(w).Encode(&res)
+	err := json.NewEncoder(w).Encode(&body)
 	if err != nil {
 		return fmt.Errorf("http-handle/reponse.UserDelete: %w", err)
 	}
