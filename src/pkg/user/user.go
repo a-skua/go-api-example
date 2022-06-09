@@ -37,9 +37,9 @@ func validPassword(p Password) bool {
 }
 
 type User struct {
-	ID
-	Name
-	Password
+	ID       ID
+	Name     Name
+	Password Password
 }
 
 func New(name Name, pw Password) *User {

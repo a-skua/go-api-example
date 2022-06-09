@@ -8,9 +8,10 @@ import (
 
 // mock
 type mockRepository struct {
+	user *User
+	err  error
+	// flags
 	create, read, update, delete bool
-	user                         *User
-	err                          error
 }
 
 func (r *mockRepository) UserCreate(*User) (*User, error) {

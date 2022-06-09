@@ -14,8 +14,8 @@ func (n Name) valid() bool {
 }
 
 type Company struct {
-	ID
-	Name
+	ID   ID
+	Name Name
 }
 
 func New(n Name) *Company {

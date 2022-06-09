@@ -1,14 +1,14 @@
 package repository
 
 import (
-	"api.example.com/pkg/user"
+	users "api.example.com/pkg/user"
 	"api.example.com/rdb-repository/model"
 	"database/sql"
 	"fmt"
 )
 
 // UserCreate
-func UserCreate(db *sql.DB, user *user.User) (*user.User, error) {
+func UserCreate(db *sql.DB, user *users.User) (*users.User, error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return nil, fmt.Errorf("rdb-repository.UserCreate: %w", err)
@@ -28,7 +28,7 @@ func UserCreate(db *sql.DB, user *user.User) (*user.User, error) {
 	return model.NewEntity(), nil
 }
 
-func userCreate(tx *sql.Tx, user model.User) (model.User, error) {
+func userCreate(tx model.DB, user model.User) (model.User, error) {
 	err := user.Create(tx)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func userCreate(tx *sql.Tx, user model.User) (model.User, error) {
 }
 
 // UserRead
-func UserRead(db *sql.DB, id user.ID) (*user.User, error) {
+func UserRead(db *sql.DB, id users.ID) (*users.User, error) {
 	model, err := userRead(db, model.NewUserFromID(id))
 	if err != nil {
 		return nil, fmt.Errorf("rdb-repository.UserRead: %w", err)
@@ -47,17 +47,17 @@ func UserRead(db *sql.DB, id user.ID) (*user.User, error) {
 	return model.NewEntity(), nil
 }
 
-func userRead(db *sql.DB, user model.User) (model.User, error) {
-	err := user.Read(db)
+func userRead(tx model.DB, user model.User) (model.User, error) {
+	err := user.Read(tx)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	return user, nil
 }
 
 // UserUpdate
-func UserUpdate(db *sql.DB, user *user.User) (*user.User, error) {
+func UserUpdate(db *sql.DB, user *users.User) (*users.User, error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return nil, fmt.Errorf("rdb-repository.UserUpdate: %w", err)
@@ -77,7 +77,7 @@ func UserUpdate(db *sql.DB, user *user.User) (*user.User, error) {
 	return model.NewEntity(), nil
 }
 
-func userUpdate(tx *sql.Tx, user model.User) (model.User, error) {
+func userUpdate(tx model.DB, user model.User) (model.User, error) {
 	err := user.Update(tx)
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func userUpdate(tx *sql.Tx, user model.User) (model.User, error) {
 }
 
 // UserDelete
-func UserDelete(db *sql.DB, id user.ID) error {
+func UserDelete(db *sql.DB, id users.ID) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("rdb-repository.UserDelete: %w", err)
@@ -107,7 +107,7 @@ func UserDelete(db *sql.DB, id user.ID) error {
 	return nil
 }
 
-func userDelete(tx *sql.Tx, user model.User) error {
+func userDelete(tx model.DB, user model.User) error {
 	err := user.Delete(tx)
 	if err != nil {
 		return err
