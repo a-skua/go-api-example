@@ -33,6 +33,22 @@ func newDB() *sql.DB {
 	return db
 }
 
+func testUserDateTime(want, got *user) error {
+	if want.UpdatedAt.Equal(got.UpdatedAt) {
+		want.UpdatedAt = got.UpdatedAt
+	} else {
+		return fmt.Errorf("UpdatedAt: want=%v, got=%v.", want.UpdatedAt, got.UpdatedAt)
+	}
+
+	if want.CreatedAt.Equal(got.CreatedAt) {
+		want.CreatedAt = got.CreatedAt
+	} else {
+		return fmt.Errorf("CreatedAt: want=%v, got=%v.", want.CreatedAt, got.CreatedAt)
+	}
+
+	return nil
+}
+
 func TestNewUser(t *testing.T) {
 	type test struct {
 		testcase string
@@ -63,11 +79,9 @@ func TestNewUser(t *testing.T) {
 					Password: pw,
 				},
 				want: &user{
-					ID:        1,
-					Name:      "bob",
-					Password:  pw.Hash(),
-					CreatedAt: time.Time{},
-					UpdatedAt: time.Time{},
+					ID:       1,
+					Name:     "bob",
+					Password: pw.Hash(),
 				},
 			}
 		}(),
@@ -97,11 +111,9 @@ func TestUser_NewEntity(t *testing.T) {
 	tests := []*test{
 		{
 			user: &user{
-				ID:        2,
-				Name:      "alice",
-				Password:  []byte("password hash!"),
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
+				ID:       2,
+				Name:     "alice",
+				Password: []byte("password hash!"),
 			},
 			want: &users.User{
 				ID:       2,
@@ -119,8 +131,10 @@ func TestUser_NewEntity(t *testing.T) {
 func TestUser_Create(t *testing.T) {
 	type test struct {
 		testcase string
-		user     *user
 		db       *sql.DB
+		user     *user
+		want     *user
+		wantErr  bool
 	}
 
 	do := func(tt *test) {
@@ -133,59 +147,62 @@ func TestUser_Create(t *testing.T) {
 			}
 			defer tx.Rollback()
 
-			beforeUser := *tt.user
-			err = tt.user.Create(tx)
-			if err != nil {
-				t.Fatalf("err: %v", err)
+			{
+				now := currentTime() // 失敗する可能性あり
+				err = tt.user.Create(tx)
+				if tt.wantErr != (err != nil) {
+					t.Fatalf("want-error=%v, error=%v.", tt.wantErr, err)
+				}
+				tt.want.UpdatedAt = now
+				tt.want.CreatedAt = now
+				if !tt.user.ID.Valid() {
+					t.Fatal("invalid user.ID")
+				}
+				tt.want.ID = tt.user.ID
 			}
-			if reflect.DeepEqual(beforeUser, tt.user) {
-				t.Fatalf("unchanged before=%v,  after=%v", beforeUser, tt.user)
+			if !reflect.DeepEqual(tt.want, tt.user) {
+				t.Fatalf("want=%v, got=%v.", tt.want, tt.user)
 			}
 
-			rows, err := tx.Query("select * from users")
+			rows, err := tx.Query("select id, name, password, updated_at, created_at from users")
 			if err != nil {
 				panic(err)
 			}
+			defer rows.Close()
 
-			want := tt.user
 			got := &user{}
-
 			if rows.Next() {
-				err := rows.Scan(&got.ID, &got.Name, &got.Password, &got.CreatedAt, &got.UpdatedAt)
+				err := rows.Scan(&got.ID, &got.Name, &got.Password, &got.UpdatedAt, &got.CreatedAt)
 				if err != nil {
-					t.Fatalf("err: %v", err)
+					panic(err)
 				}
 			} else {
-				t.Fatalf("failed create user")
+				t.Fatal("failed create user")
 			}
 
-			{ // NOTE MySQL は micro sec まで?
-				want.CreatedAt = want.CreatedAt.Round(time.Microsecond)
-				want.UpdatedAt = want.UpdatedAt.Round(time.Microsecond)
-				if want.CreatedAt.Equal(got.CreatedAt) && want.UpdatedAt.Equal(got.UpdatedAt) {
-					got.CreatedAt = want.CreatedAt
-					got.UpdatedAt = want.UpdatedAt
-				} else {
-					t.Fatalf("invalid time want=%v, got=%v.", want.CreatedAt, got.CreatedAt)
-				}
-			}
-			if !reflect.DeepEqual(want, got) {
-				t.Fatalf("want=%v, got=%v.", want, got)
+			err = testUserDateTime(tt.want, got)
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			if rows.Next() {
-				t.Fatalf("unexpected multiple users")
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want=%v, got=%v.", tt.want, got)
 			}
 		})
 	}
 
 	tests := []*test{
 		{
+			db: newDB(),
 			user: &user{
 				Name:     "bob",
 				Password: []byte("password"),
 			},
-			db: newDB(),
+			want: &user{
+				Name:     "bob",
+				Password: []byte("password"),
+			},
+			wantErr: false,
 		},
 	}
 
@@ -195,54 +212,256 @@ func TestUser_Create(t *testing.T) {
 }
 
 func TestUser_Read(t *testing.T) {
+	type table struct {
+		users []*user
+	}
+
 	type test struct {
 		testcase string
-		user     *user
 		db       *sql.DB
+		table
+		want    *user
+		wantErr bool
 	}
 
 	do := func(tt *test) {
-		// TODO
+		t.Run(tt.testcase, func(t *testing.T) {
+			defer tt.db.Close()
+
+			tx, err := tt.db.Begin()
+			if err != nil {
+				panic(err)
+			}
+			defer tx.Rollback()
+			for _, u := range tt.users {
+				err := u.Create(tx)
+				if err != nil {
+					panic(err)
+				}
+			}
+
+			got := &user{ID: tt.users[0].ID}
+			tt.want.ID = tt.users[0].ID
+			tt.want.UpdatedAt = tt.users[0].UpdatedAt
+			tt.want.CreatedAt = tt.users[0].CreatedAt
+
+			err = got.Read(tx)
+			if tt.wantErr != (err != nil) {
+				t.Fatalf("want-error=%v, error=%v.", tt.wantErr, err)
+			}
+
+			err = testUserDateTime(tt.want, got)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want=%v, got=%v.", tt.want, got)
+			}
+		})
 	}
 
-	tests := []*test{}
+	tests := []*test{
+		{
+			db: newDB(),
+			table: table{
+				users: []*user{
+					{
+						Name:     "foo",
+						Password: []byte("password"),
+					},
+					{
+						Name:     "bar",
+						Password: []byte("qwerty"),
+					},
+					{
+						Name:     "baz",
+						Password: []byte("12345678"),
+					},
+				},
+			},
+			want: &user{
+				Name:     "foo",
+				Password: []byte("password"),
+			},
+			wantErr: false,
+		},
+	}
 
 	for _, tt := range tests {
 		do(tt)
 	}
 }
 
-func TestUserUpdate(t *testing.T) {
+func TestUser_Update(t *testing.T) {
+	type table struct {
+		users []*user
+	}
+
 	type test struct {
 		testcase string
-		user     *user
 		db       *sql.DB
-		wantErr  bool
+		table
+		user    *user
+		want    *user
+		wantErr bool
 	}
 
 	do := func(tt *test) {
-		// TODO
+		t.Run(tt.testcase, func(t *testing.T) {
+			defer tt.db.Close()
+
+			tx, err := tt.db.Begin()
+			if err != nil {
+				panic(err)
+			}
+			defer tx.Rollback()
+
+			for _, u := range tt.users {
+				err := u.Create(tx)
+				if err != nil {
+					panic(err)
+				}
+			}
+
+			time.Sleep(time.Second)
+
+			{
+				tt.user.ID = tt.users[0].ID
+				now := currentTime()
+				err := tt.user.Update(tx)
+				if tt.wantErr != (err != nil) {
+					t.Fatalf("want-error%v, error=%v.", tt.wantErr, err)
+				}
+				tt.want.ID = tt.users[0].ID
+				tt.want.UpdatedAt = now
+			}
+			if !reflect.DeepEqual(tt.want, tt.user) {
+				t.Fatalf("wnat=%v, got=%v.", tt.want, tt.user)
+			}
+			tt.want.CreatedAt = tt.users[0].CreatedAt
+
+			got := &user{ID: tt.want.ID}
+			err = got.Read(tx)
+			if err != nil {
+				panic(err)
+			}
+
+			err = testUserDateTime(tt.want, got)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want=%v, got=%v.", tt.want, got)
+			}
+		})
 	}
 
-	tests := []*test{}
+	tests := []*test{
+		{
+			db: newDB(),
+			table: table{
+				users: []*user{
+					{
+						Name:     "foo",
+						Password: []byte("password"),
+					},
+					{
+						Name:     "bar",
+						Password: []byte("qwerty"),
+					},
+					{
+						Name:     "baz",
+						Password: []byte("12345678"),
+					},
+				},
+			},
+			user: &user{
+				Name:     "update foo!",
+				Password: []byte("password!!"),
+			},
+			want: &user{
+				Name:     "update foo!",
+				Password: []byte("password!!"),
+			},
+			wantErr: false,
+		},
+	}
 
 	for _, tt := range tests {
 		do(tt)
 	}
 }
 
-func TestUserDelete(t *testing.T) {
+func TestUser_Delete(t *testing.T) {
+	type table struct {
+		users []*user
+	}
+
 	type test struct {
 		testcase string
-		user     *user
 		db       *sql.DB
+		table
+		user    *user
+		wantErr bool
 	}
 
 	do := func(tt *test) {
-		// TODO
+		t.Run(tt.testcase, func(t *testing.T) {
+			defer tt.db.Close()
+
+			tx, err := tt.db.Begin()
+			if err != nil {
+				panic(err)
+			}
+			defer tx.Rollback()
+
+			for _, u := range tt.users {
+				err := u.Create(tx)
+				if err != nil {
+					panic(err)
+				}
+			}
+
+			tt.user.ID = tt.users[0].ID
+			err = tt.user.Delete(tx)
+			if tt.wantErr != (err != nil) {
+				t.Fatalf("want-error=%v, error=%v.", tt.wantErr, err)
+			}
+
+			got := user{ID: tt.user.ID}
+			err = got.Read(tx)
+			if err == nil {
+				t.Fatal("error is nil")
+			}
+			t.Log(err)
+		})
 	}
 
-	tests := []*test{}
+	tests := []*test{
+		{
+			db: newDB(),
+			table: table{
+				users: []*user{
+					{
+						Name:     "foo",
+						Password: []byte("password"),
+					},
+					{
+						Name:     "bar",
+						Password: []byte("qwerty"),
+					},
+					{
+						Name:     "baz",
+						Password: []byte("12345678"),
+					},
+				},
+			},
+			user:    &user{},
+			wantErr: false,
+		},
+	}
 
 	for _, tt := range tests {
 		do(tt)

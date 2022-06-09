@@ -6,7 +6,7 @@ import (
 
 type ID int
 
-func (id ID) valid() bool {
+func (id ID) Valid() bool {
 	return id > 0
 }
 

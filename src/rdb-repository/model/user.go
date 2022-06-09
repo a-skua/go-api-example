@@ -5,7 +5,6 @@ import (
 	"api.example.com/pkg/user/password"
 	"context"
 	"fmt"
-	"time"
 )
 
 type User interface {
@@ -21,8 +20,8 @@ type user struct {
 	ID        users.ID
 	Name      users.Name
 	Password  []byte
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt dateTime
+	UpdatedAt dateTime
 }
 
 func NewUser(u *users.User) User {
@@ -48,7 +47,7 @@ func (u *user) NewEntity() *users.User {
 }
 
 func (u *user) Create(tx DB) error {
-	now := time.Now()
+	now := currentTime()
 	result, err := tx.ExecContext(
 		context.TODO(),
 		"insert into `users`(`name`, `password`, `created_at`, `updated_at`) value (?, ?, ?, ?)",
@@ -72,8 +71,8 @@ func (u *user) Create(tx DB) error {
 	return nil
 }
 
-func (u *user) Read(db DB) error {
-	err := db.QueryRowContext(
+func (u *user) Read(tx DB) error {
+	err := tx.QueryRowContext(
 		context.TODO(),
 		"select `name`, `password`, `created_at`, `updated_at` from `users` where `id`=?",
 		u.ID,
@@ -85,7 +84,7 @@ func (u *user) Read(db DB) error {
 }
 
 func (u *user) Update(tx DB) error {
-	now := time.Now()
+	now := currentTime()
 	result, err := tx.ExecContext(
 		context.TODO(),
 		"update `users` set `name`=?, `password`=?, `updated_at`=? where `id`=?",

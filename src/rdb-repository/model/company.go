@@ -4,7 +4,6 @@ import (
 	companies "api.example.com/pkg/company"
 	"context"
 	"fmt"
-	"time"
 )
 
 type Company interface {
@@ -19,8 +18,8 @@ type Company interface {
 type company struct {
 	ID        companies.ID
 	Name      companies.Name
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt dateTime
+	UpdatedAt dateTime
 }
 
 func NewCompany(c *companies.Company) Company {
@@ -37,7 +36,7 @@ func NewCompanyFromID(id companies.ID) Company {
 }
 
 func (c *company) Create(tx DB) error {
-	now := time.Now()
+	now := currentTime()
 	result, err := tx.ExecContext(
 		context.TODO(),
 		"insert into `companies`(`name`, `created_at`, `updated_at`) value (?, ?, ?)",
@@ -73,7 +72,7 @@ func (c *company) Read(tx DB) error {
 }
 
 func (c *company) Update(tx DB) error {
-	now := time.Now()
+	now := currentTime()
 	result, err := tx.ExecContext(
 		context.TODO(),
 		"update `companies` set `name`=?, `updated_at`=? where `id`=?",
