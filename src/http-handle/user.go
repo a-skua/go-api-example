@@ -12,6 +12,10 @@ type userHandler struct {
 	server user.Server
 }
 
+func newUserHandler(s user.Server) *userHandler {
+	return &userHandler{s}
+}
+
 func (h *userHandler) create(w http.ResponseWriter, r *http.Request) {
 	user, err := request.UserCreate(r)
 	if err != nil {

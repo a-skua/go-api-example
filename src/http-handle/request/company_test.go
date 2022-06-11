@@ -63,6 +63,7 @@ func TestCompanyRead(t *testing.T) {
 
 	do := func(tt *test) {
 		t.Run(tt.testcase, func(t *testing.T) {
+			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", tt.url, nil)
 
 			var (
@@ -73,7 +74,7 @@ func TestCompanyRead(t *testing.T) {
 			router.HandleFunc("/company/{company_id}", func(w http.ResponseWriter, r *http.Request) {
 				got, err = CompanyRead(r)
 			})
-			router.ServeHTTP(nil, r)
+			router.ServeHTTP(w, r)
 
 			if hasErr := err != nil; tt.wantErr != hasErr {
 				t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
@@ -114,6 +115,7 @@ func TestCompanyUpdate(t *testing.T) {
 
 	do := func(tt test) {
 		t.Run(tt.testcase, func(t *testing.T) {
+			w := httptest.NewRecorder()
 			r := httptest.NewRequest("PUT", tt.url, bytes.NewBuffer(tt.body))
 
 			var (
@@ -124,7 +126,7 @@ func TestCompanyUpdate(t *testing.T) {
 			router.HandleFunc("/company/{company_id}", func(w http.ResponseWriter, r *http.Request) {
 				got, err = CompanyUpdate(r)
 			})
-			router.ServeHTTP(nil, r)
+			router.ServeHTTP(w, r)
 			if hasErr := err != nil; tt.wantErr != hasErr {
 				t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
 			}
@@ -178,6 +180,7 @@ func TestCompanyDelete(t *testing.T) {
 		t.Logf("testcace: %v", tt.testcase)
 
 		t.Run(tt.testcase, func(t *testing.T) {
+			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", tt.url, nil)
 
 			var (
@@ -188,7 +191,7 @@ func TestCompanyDelete(t *testing.T) {
 			router.HandleFunc("/company/{company_id}", func(w http.ResponseWriter, r *http.Request) {
 				got, err = CompanyDelete(r)
 			})
-			router.ServeHTTP(nil, r)
+			router.ServeHTTP(w, r)
 
 			if tt.wantErr != (err != nil) {
 				t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)

@@ -12,6 +12,10 @@ type companyHandler struct {
 	server company.Server
 }
 
+func newCompanyHandler(s company.Server) *companyHandler {
+	return &companyHandler{s}
+}
+
 func (h *companyHandler) create(w http.ResponseWriter, r *http.Request) {
 	company, err := request.CompanyCreate(r)
 	if err != nil {

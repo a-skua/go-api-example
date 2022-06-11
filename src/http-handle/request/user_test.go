@@ -74,6 +74,7 @@ func TestUserRead(t *testing.T) {
 
 	do := func(tt *test) {
 		t.Run(tt.testcase, func(t *testing.T) {
+			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", tt.url, nil)
 
 			var (
@@ -84,7 +85,7 @@ func TestUserRead(t *testing.T) {
 			router.HandleFunc("/user/{user_id}", func(w http.ResponseWriter, r *http.Request) {
 				got, err = UserRead(r)
 			})
-			router.ServeHTTP(nil, r)
+			router.ServeHTTP(w, r)
 
 			if hasErr := err != nil; tt.wantErr != hasErr {
 				t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
@@ -126,6 +127,7 @@ func TestUserUpdate(t *testing.T) {
 
 	do := func(tt test) {
 		t.Run(tt.testcase, func(t *testing.T) {
+			w := httptest.NewRecorder()
 			r := httptest.NewRequest("PUT", tt.url, bytes.NewBuffer(tt.body))
 
 			var (
@@ -136,7 +138,7 @@ func TestUserUpdate(t *testing.T) {
 			router.HandleFunc("/user/{user_id}", func(w http.ResponseWriter, r *http.Request) {
 				got, err = UserUpdate(r)
 			})
-			router.ServeHTTP(nil, r)
+			router.ServeHTTP(w, r)
 
 			if hasErr := err != nil; tt.wantErr != hasErr {
 				t.Fatalf("want-err=%v, err=%v", tt.wantErr, err)
@@ -204,6 +206,7 @@ func TestUserDelete(t *testing.T) {
 		t.Logf("testcace: %v", tt.testcase)
 
 		t.Run(tt.testcase, func(t *testing.T) {
+			w := httptest.NewRecorder()
 			r := httptest.NewRequest("GET", tt.url, nil)
 
 			var (
@@ -214,7 +217,7 @@ func TestUserDelete(t *testing.T) {
 			router.HandleFunc("/user/{user_id}", func(w http.ResponseWriter, r *http.Request) {
 				got, err = UserDelete(r)
 			})
-			router.ServeHTTP(nil, r)
+			router.ServeHTTP(w, r)
 
 			if tt.wantErr != (err != nil) {
 				t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)

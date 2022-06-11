@@ -32,6 +32,8 @@ func TestCompanyCreate(t *testing.T) {
 			}
 
 			res := w.Result()
+			defer res.Body.Close()
+
 			gotBody, _ := io.ReadAll(res.Body)
 			if !reflect.DeepEqual(tt.want.body, gotBody) {
 				t.Fatalf("want=%v, got=%v.", tt.want.body, gotBody)
@@ -92,6 +94,8 @@ func TestCompanyRead(t *testing.T) {
 			}
 
 			res := w.Result()
+			defer res.Body.Close()
+
 			gotBody, _ := io.ReadAll(res.Body)
 			if !reflect.DeepEqual(tt.want.body, gotBody) {
 				t.Fatalf("want=%v, got=%v.", tt.want.body, gotBody)
@@ -152,6 +156,8 @@ func TestCompanyUpdate(t *testing.T) {
 			}
 
 			res := w.Result()
+			defer res.Body.Close()
+
 			gotBody, _ := io.ReadAll(res.Body)
 			if !reflect.DeepEqual(tt.want.body, gotBody) {
 				t.Fatalf("want=%v, got=%v.", tt.want.body, gotBody)
@@ -211,6 +217,8 @@ func TestCompanyDelete(t *testing.T) {
 			}
 
 			res := w.Result()
+			defer res.Body.Close()
+
 			gotBody, _ := io.ReadAll(res.Body)
 			if !reflect.DeepEqual(tt.want.body, gotBody) {
 				t.Fatalf("want=%v, got=%v.", tt.want.body, gotBody)

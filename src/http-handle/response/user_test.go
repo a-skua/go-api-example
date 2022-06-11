@@ -52,9 +52,9 @@ func TestUserCreate(t *testing.T) {
 			}
 
 			res := w.Result()
-			gotBody, _ := io.ReadAll(res.Body)
 			defer res.Body.Close()
 
+			gotBody, _ := io.ReadAll(res.Body)
 			if !reflect.DeepEqual(tt.want.body, gotBody) {
 				t.Fatalf("want=%s, got=%s.", tt.want.body, gotBody)
 			}
@@ -128,9 +128,9 @@ func TestUserRead(t *testing.T) {
 			}
 
 			res := w.Result()
-			gotBody, _ := io.ReadAll(res.Body)
 			defer res.Body.Close()
 
+			gotBody, _ := io.ReadAll(res.Body)
 			if !reflect.DeepEqual(tt.want.body, gotBody) {
 				t.Fatalf("want=%s, got=%s.", tt.want.body, gotBody)
 			}
@@ -204,9 +204,9 @@ func TestUserUpdate(t *testing.T) {
 			}
 
 			res := w.Result()
-			gotBody, _ := io.ReadAll(res.Body)
 			defer res.Body.Close()
 
+			gotBody, _ := io.ReadAll(res.Body)
 			if !reflect.DeepEqual(tt.want.body, gotBody) {
 				t.Fatalf("want=%s, got=%s.", tt.want.body, gotBody)
 			}
@@ -279,9 +279,9 @@ func TestUserDelete(t *testing.T) {
 			}
 
 			res := w.Result()
-			gotBody, _ := io.ReadAll(res.Body)
 			defer res.Body.Close()
 
+			gotBody, _ := io.ReadAll(res.Body)
 			if !reflect.DeepEqual(tt.want.body, gotBody) {
 				t.Fatalf("want=%s, got=%s.", tt.want.body, gotBody)
 			}

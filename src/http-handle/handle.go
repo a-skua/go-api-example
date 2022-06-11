@@ -16,9 +16,16 @@ func New(r Repository) http.Handler {
 	mux := mux.NewRouter()
 
 	{
-		user := &userHandler{user.NewServer(r)}
-		mux.HandleFunc("/user", user.create).Methods(http.MethodPost)
-		mux.HandleFunc("/user/{user_id:[0-9]+}", func(w http.ResponseWriter, r *http.Request) {
+		user := newUserHandler(user.NewServer(r))
+		mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodPost:
+				user.create(w, r)
+			default:
+				http.NotFound(w, r)
+			}
+		})
+		mux.HandleFunc("/user/{user_id}", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
 				user.read(w, r)
@@ -29,12 +36,18 @@ func New(r Repository) http.Handler {
 			default:
 				http.NotFound(w, r)
 			}
-		}).Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
+		})
 	}
+
 	{
-		company := &companyHandler{company.NewServer(r)}
-		mux.HandleFunc("/company", company.create).Methods(http.MethodPost)
-		mux.HandleFunc("/company/{company_id:[0-9]+}", func(w http.ResponseWriter, r *http.Request) {
+		company := newCompanyHandler(company.NewServer(r))
+		mux.HandleFunc("/company", func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodPost:
+				company.create(w, r)
+			}
+		})
+		mux.HandleFunc("/company/{company_id}", func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
 				company.read(w, r)
@@ -45,7 +58,8 @@ func New(r Repository) http.Handler {
 			default:
 				http.NotFound(w, r)
 			}
-		}).Methods(http.MethodGet, http.MethodPut, http.MethodDelete)
+		})
 	}
+
 	return mux
 }
