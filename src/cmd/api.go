@@ -3,7 +3,7 @@ package main
 import (
 	"api.example.com/env"
 	"api.example.com/http-handle"
-	"api.example.com/rdb-repository"
+	"api.example.com/repository"
 	"context"
 	"database/sql"
 	"fmt"

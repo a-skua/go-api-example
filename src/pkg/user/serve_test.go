@@ -1,73 +1,76 @@
 package user
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 )
 
 // mock
-type mockRepository struct {
+type repository struct {
 	user *User
 	err  error
 	// flags
 	create, read, update, delete bool
 }
 
-func (r *mockRepository) UserCreate(*User) (*User, error) {
+func (r *repository) UserCreate(*User) (*User, error) {
 	if r.create {
 		return r.user, r.err
-	} else {
-		return nil, fmt.Errorf("failed create")
 	}
+	return nil, fmt.Errorf("failed create")
 }
 
-func (r *mockRepository) UserRead(ID) (*User, error) {
+func (r *repository) UserRead(ID) (*User, error) {
 	if r.read {
 		return r.user, r.err
-	} else {
-		return nil, fmt.Errorf("failed read")
 	}
+	return nil, fmt.Errorf("failed read")
 }
 
-func (r *mockRepository) UserUpdate(*User) (*User, error) {
+func (r *repository) UserUpdate(*User) (*User, error) {
 	if r.update {
 		return r.user, r.err
-	} else {
-		return nil, fmt.Errorf("failed update")
 	}
+	return nil, fmt.Errorf("failed update")
 }
 
-func (r *mockRepository) UserDelete(ID) error {
+func (r *repository) UserDelete(ID) error {
 	if r.delete {
 		return r.err
-	} else {
-		return fmt.Errorf("failed delete")
 	}
+	return fmt.Errorf("failed delete")
 }
 
 // test
 func TestNewServer(t *testing.T) {
-	type test struct {
-		testcase   string
+	type args struct {
 		repository Repository
-		want       Server
+	}
+
+	type test struct {
+		name string
+		args args
+		want Server
 	}
 
 	do := func(tt *test) {
-		t.Run(tt.testcase, func(t *testing.T) {
-			got := NewServer(tt.repository)
-			if !reflect.DeepEqual(tt.want, got) {
-				t.Fatalf("want=%v, got=%v.", tt.want, got)
-			}
-		})
+		got := NewServer(tt.args.repository)
+		if !reflect.DeepEqual(tt.want, got) {
+			t.Fatalf("want=%v, got=%v.", tt.want, got)
+		}
 	}
 
 	tests := []*test{
 		{
-			repository: &mockRepository{},
+			name: "true",
+			args: args{
+				repository: &repository{},
+			},
 			want: &server{
-				repository: &mockRepository{},
+				repository: &repository{},
 			},
 		},
 	}
@@ -78,22 +81,24 @@ func TestNewServer(t *testing.T) {
 }
 
 func TestServer_Create(t *testing.T) {
+	type args struct {
+		user *User
+	}
+
 	type test struct {
-		testcase string
-		server   Server
-		user     *User
-		wantErr  bool
-		want     *User
+		name    string
+		server  Server
+		args    args
+		want    *User
+		wantErr bool
 	}
 
 	do := func(tt *test) {
-		t.Run(tt.testcase, func(t *testing.T) {
-			got, err := tt.server.Create(tt.user)
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.server.Create(tt.args.user)
 			if tt.wantErr != (err != nil) {
-				t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
+				t.Fatalf("want-error=%v, error=%v.", tt.wantErr, err)
 			}
-
-			t.Log(err)
 
 			if !reflect.DeepEqual(tt.want, got) {
 				t.Fatalf("want=%v, got=%v.", tt.want, got)
@@ -103,48 +108,89 @@ func TestServer_Create(t *testing.T) {
 
 	tests := []*test{
 		{
-			server: NewServer(&mockRepository{
-				create: true,
+			name: "true",
+			server: NewServer(&repository{
 				user: &User{
-					ID:       1,
-					Name:     "bob",
-					Password: &mockPassword{"password"},
+					ID:        1,
+					Name:      "Bob",
+					Password:  newPassword("password"),
+					UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
 				},
-				err: nil,
+				create: true,
 			}),
-			user:    New("bob", &mockPassword{"password"}),
-			wantErr: false,
-			want: &User{
-				ID:       1,
-				Name:     "bob",
-				Password: &mockPassword{"password"},
+			args: args{
+				user: New("Bob", newPassword("password")),
 			},
+			want: &User{
+				ID:        1,
+				Name:      "Bob",
+				Password:  newPassword("password"),
+				UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
+			},
+			wantErr: false,
 		},
 		{
-			testcase: "invalid user",
-			server: NewServer(&mockRepository{
-				create: true,
+			name: "invalid user.name",
+			server: NewServer(&repository{
 				user: &User{
-					ID:       1,
-					Name:     "bob",
-					Password: &mockPassword{"password"},
+					ID:        1,
+					Name:      "Bob",
+					Password:  newPassword("password"),
+					UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
 				},
-				err: nil,
+				create: true,
 			}),
-			user:    New("bob", &mockPassword{"qwerty"}),
-			wantErr: true,
+			args: args{
+				user: New("", newPassword("password")),
+			},
 			want:    nil,
+			wantErr: true,
 		},
 		{
-			testcase: "repository error",
-			server: NewServer(&mockRepository{
+			name: "invalid user.name",
+			server: NewServer(&repository{
+				user: &User{
+					ID:        1,
+					Name:      "Bob",
+					Password:  newPassword("password"),
+					UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
+				},
 				create: true,
-				user:   nil,
-				err:    fmt.Errorf("internal server error"),
 			}),
-			user:    New("bob", &mockPassword{"password"}),
-			wantErr: true,
+			args: args{
+				user: New("", newPassword("password")),
+			},
 			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid user.password",
+			server: NewServer(&repository{
+				user: &User{
+					ID:        1,
+					Name:      "Bob",
+					Password:  newPassword("password"),
+					UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
+				},
+				create: true,
+			}),
+			args: args{
+				user: New("Bob", newPassword("")),
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "failed create",
+			server: NewServer(&repository{
+				err:    errors.New("inernal server error"),
+				create: true,
+			}),
+			args: args{
+				user: New("Bob", newPassword("password")),
+			},
+			want:    nil,
+			wantErr: true,
 		},
 	}
 
@@ -154,22 +200,24 @@ func TestServer_Create(t *testing.T) {
 }
 
 func TestServer_Read(t *testing.T) {
+	type args struct {
+		id ID
+	}
+
 	type test struct {
-		testcase string
-		server   Server
-		id       ID
-		wantErr  bool
-		want     *User
+		name    string
+		server  Server
+		args    args
+		want    *User
+		wantErr bool
 	}
 
 	do := func(tt *test) {
-		t.Run(tt.testcase, func(t *testing.T) {
-			got, err := tt.server.Read(tt.id)
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.server.Read(tt.args.id)
 			if tt.wantErr != (err != nil) {
-				t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
+				t.Fatalf("want=%v, got=%v.", tt.wantErr, err)
 			}
-
-			t.Log(err)
 
 			if !reflect.DeepEqual(tt.want, got) {
 				t.Fatalf("want=%v, got=%v.", tt.want, got)
@@ -179,48 +227,55 @@ func TestServer_Read(t *testing.T) {
 
 	tests := []*test{
 		{
-			server: NewServer(&mockRepository{
-				read: true,
+			name: "true",
+			server: NewServer(&repository{
 				user: &User{
-					ID:       1,
-					Name:     "bob",
-					Password: &mockPassword{"qwerty"},
+					ID:        1,
+					Name:      "Bob",
+					Password:  newPassword("password"),
+					UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
 				},
-				err: nil,
+				read: true,
 			}),
-			id:      1,
-			wantErr: false,
-			want: &User{
-				ID:       1,
-				Name:     "bob",
-				Password: &mockPassword{"qwerty"},
+			args: args{
+				id: 1,
 			},
+			want: &User{
+				ID:        1,
+				Name:      "Bob",
+				Password:  newPassword("password"),
+				UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
+			},
+			wantErr: false,
 		},
 		{
-			testcase: "invalid user_id",
-			server: NewServer(&mockRepository{
-				read: true,
+			name: "invalid user.id",
+			server: NewServer(&repository{
 				user: &User{
-					ID:       1,
-					Name:     "bob",
-					Password: &mockPassword{"qwerty"},
+					ID:        1,
+					Name:      "Bob",
+					Password:  newPassword("password"),
+					UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
 				},
-				err: nil,
+				read: true,
 			}),
-			id:      0,
-			wantErr: true,
+			args: args{
+				id: 0,
+			},
 			want:    nil,
+			wantErr: true,
 		},
 		{
-			testcase: "repository error",
-			server: NewServer(&mockRepository{
+			name: "failed read",
+			server: NewServer(&repository{
+				err:  errors.New("internal server error"),
 				read: true,
-				user: nil,
-				err:  fmt.Errorf("internal server error"),
 			}),
-			id:      1,
-			wantErr: true,
+			args: args{
+				id: 1,
+			},
 			want:    nil,
+			wantErr: true,
 		},
 	}
 
@@ -230,22 +285,24 @@ func TestServer_Read(t *testing.T) {
 }
 
 func TestServer_Update(t *testing.T) {
+	type args struct {
+		user *User
+	}
+
 	type test struct {
-		testcase string
-		server   Server
-		user     *User
-		wantErr  bool
-		want     *User
+		name    string
+		server  Server
+		args    args
+		want    *User
+		wantErr bool
 	}
 
 	do := func(tt *test) {
-		t.Run(tt.testcase, func(t *testing.T) {
-			got, err := tt.server.Update(tt.user)
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.server.Update(tt.args.user)
 			if tt.wantErr != (err != nil) {
-				t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
+				t.Fatalf("want-error=%v, error=%v.", tt.wantErr, err)
 			}
-
-			t.Log(err)
 
 			if !reflect.DeepEqual(tt.want, got) {
 				t.Fatalf("want=%v, got=%v.", tt.want, got)
@@ -255,79 +312,109 @@ func TestServer_Update(t *testing.T) {
 
 	tests := []*test{
 		{
-			server: NewServer(&mockRepository{
+			name: "true",
+			server: NewServer(&repository{
+				user: &User{
+					ID:        1,
+					Name:      "Bob",
+					Password:  newPassword("password"),
+					UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
+				},
 				update: true,
+			}),
+			args: args{
 				user: &User{
 					ID:       1,
-					Name:     "bob",
-					Password: &mockPassword{"password"},
+					Name:     "Bob",
+					Password: newPassword("password"),
 				},
-				err: nil,
-			}),
-			user: &User{
-				ID:       1,
-				Name:     "bob",
-				Password: &mockPassword{"password"},
+			},
+			want: &User{
+				ID:        1,
+				Name:      "Bob",
+				Password:  newPassword("password"),
+				UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
 			},
 			wantErr: false,
-			want: &User{
-				ID:       1,
-				Name:     "bob",
-				Password: &mockPassword{"password"},
-			},
 		},
 		{
-			testcase: "invalid user",
-			server: NewServer(&mockRepository{
+			name: "invalid user.id",
+			server: NewServer(&repository{
+				user: &User{
+					ID:        1,
+					Name:      "Bob",
+					Password:  newPassword("password"),
+					UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
+				},
 				update: true,
+			}),
+			args: args{
+				user: &User{
+					ID:       0,
+					Name:     "Bob",
+					Password: newPassword("password"),
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid user.name",
+			server: NewServer(&repository{
+				user: &User{
+					ID:        1,
+					Name:      "Bob",
+					Password:  newPassword("password"),
+					UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
+				},
+				update: true,
+			}),
+			args: args{
 				user: &User{
 					ID:       1,
-					Name:     "bob",
-					Password: &mockPassword{"password"},
+					Name:     "",
+					Password: newPassword("password"),
 				},
-				err: nil,
-			}),
-			user: &User{
-				ID:       1,
-				Name:     "",
-				Password: &mockPassword{"password"},
 			},
-			wantErr: true,
 			want:    nil,
+			wantErr: true,
 		},
 		{
-			testcase: "invalid user_id",
-			server: NewServer(&mockRepository{
+			name: "invalid user.password",
+			server: NewServer(&repository{
+				user: &User{
+					ID:        1,
+					Name:      "Bob",
+					Password:  newPassword("password"),
+					UpdatedAt: time.Date(2022, 8, 9, 12, 34, 56, 0, time.UTC),
+				},
 				update: true,
+			}),
+			args: args{
 				user: &User{
 					ID:       1,
-					Name:     "bob",
-					Password: &mockPassword{"password"},
+					Name:     "Bob",
+					Password: newPassword(""),
 				},
-				err: nil,
-			}),
-			user: &User{
-				ID:       0,
-				Name:     "bob",
-				Password: &mockPassword{"password"},
 			},
-			wantErr: true,
 			want:    nil,
+			wantErr: true,
 		},
 		{
-			testcase: "repository error",
-			server: NewServer(&mockRepository{
+			name: "failed update",
+			server: NewServer(&repository{
+				err:    errors.New("internal server error"),
 				update: true,
-				user:   nil,
-				err:    fmt.Errorf("internal server error"),
 			}),
-			user: &User{
-				ID:       1,
-				Name:     "bob",
-				Password: &mockPassword{"password"},
+			args: args{
+				user: &User{
+					ID:       1,
+					Name:     "Bob",
+					Password: newPassword("password"),
+				},
 			},
-			wantErr: true,
 			want:    nil,
+			wantErr: true,
 		},
 	}
 
@@ -337,49 +424,58 @@ func TestServer_Update(t *testing.T) {
 }
 
 func TestServer_Delete(t *testing.T) {
+	type args struct {
+		id ID
+	}
+
 	type test struct {
-		testcase string
-		server   Server
-		id       ID
-		wantErr  bool
+		name    string
+		server  Server
+		args    args
+		wantErr bool
 	}
 
 	do := func(tt *test) {
-		t.Run(tt.testcase, func(t *testing.T) {
-			err := tt.server.Delete(tt.id)
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.server.Delete(tt.args.id)
 			if tt.wantErr != (err != nil) {
-				t.Errorf("want-err=%v, err=%v.", tt.wantErr, err)
+				t.Fatalf("want-error=%v, error=%v.", tt.wantErr, err)
 			}
-
-			t.Log(err)
 		})
 	}
 
 	tests := []*test{
 		{
-			server: NewServer(&mockRepository{
-				delete: true,
+			name: "true",
+			server: NewServer(&repository{
 				err:    nil,
+				delete: true,
 			}),
-			id:      1,
+			args: args{
+				id: 1,
+			},
 			wantErr: false,
 		},
 		{
-			testcase: "invalid user_id",
-			server: NewServer(&mockRepository{
-				delete: true,
+			name: "invalid user.id",
+			server: NewServer(&repository{
 				err:    nil,
+				delete: true,
 			}),
-			id:      0,
+			args: args{
+				id: 0,
+			},
 			wantErr: true,
 		},
 		{
-			testcase: "repository error",
-			server: NewServer(&mockRepository{
+			name: "failed delete",
+			server: NewServer(&repository{
+				err:    errors.New("internal server error"),
 				delete: true,
-				err:    fmt.Errorf("internal server error"),
 			}),
-			id:      1,
+			args: args{
+				id: 1,
+			},
 			wantErr: true,
 		},
 	}

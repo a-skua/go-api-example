@@ -20,10 +20,6 @@ func (pw mockPassword) Length() int {
 	return len(pw)
 }
 
-func (mockPassword) String() string {
-	return user.PasswordString
-}
-
 func (pw mockPassword) Hash() []byte {
 	return []byte(pw)
 }

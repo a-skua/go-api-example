@@ -21,7 +21,7 @@ func writeUser(w http.ResponseWriter, u *user.User) error {
 		User: User{
 			ID:       u.ID,
 			Name:     u.Name,
-			Password: u.Password.String(),
+			Password: "*****",
 		},
 	}
 

@@ -27,298 +27,168 @@ I hope you can use it as a reference when implementing the API.
 会社を作成したユーザーは管理者として会社の従業員になります。
 管理者であるユーザーは会社の全てを操作できますが、
 管理者でない従業員は、会社に所属する自身の情報の確認しか許されていません。
-- `/user`: ユーザーを扱う。
-  - `POST /user`: `name` は1文字以上、 `password` は8文字以上とする。
-    ```json
-    {
-      "user": {
-        "name": "Bob",
-        "password": "password"
-      }
-    }
-    ```
-  - `GET /user/{user_id}`: `password`の表示は 伏字(`*****`)固定。
-    ```json
-    {
-      "user": {
-        "id": 1,
-        "name": "Bob",
-        "password": "*****",
-        "companies": [
-          {
-            "id": 1,
-            "name": "GREATE COMPANY"
-          }
-        ]
-      }
-    }
-    ```
-  - `PUT /user/{user_id}`: 更新時の条件は作成時と同じ。
-    ```json
-    {
-      "user": {
-        "name": "Bob",
-        "password": "password"
-      }
-    }
-    ```
-  - `DELETE /user/{user_id}`
-    ```json
-    {
-      "user": {}
-    }
-    ```
 
-- `/company`: 会社情報を扱う。
-  - `POST /company`: `name` は1文字以上とする。
-    ```json
-    {
-      "company": {
-        "name": "GREATE COMPANY"
-      }
-    }
-    ```
-  - `GET /company/{company_id}`
-    ```json
-    {
-      "company": {
-        "id": 1,
-        "name": "GREATE COMPANY"
-      }
-    }
-    ```
-  - `PUT /company/{company_id}`: 更新時の条件は作成時と同じ。
-    ```json
-    {
-      "company": {
-        "name": "GREATE COMPANY"
-      }
-    }
-    ```
-  - `DELETE /company/{company_id}`
-
-- `/company/{company_id}/groups`: 会社の組織階層を扱う。
-  - `GET /company/{company_id}/groups`: Header `X-User-Id` 必須。
-    ```json
-    {
-      "groups": [
-        {
-          "id": 1,
-          "name": "開発部",
-          "parent": null,
-          "children": [
-            {
-              "id": 2,
-              "name": "第1課",
-              "children": []
-            },
-            {
-              "id": 3,
-              "name": "第2課",
-              "children": []
-            }
-          ]
+- ユーザー情報を扱うエンドポイント
+  `/user`
+  - 登録
+    `POST /user`
+    - 条件
+      - `user.name`
+        - 1文字以上、255文字以下
+      - `user.password`
+        - 8文字以上、255文字以下
+        - Responseの `user.password`は伏せ字(`*****`)とする
+    - Request Body
+      ```json
+      {
+        "user": {
+          "name": "Bob",
+          "password": "password"
         }
-      ]
-    }
-    ```
-  - `POST /company/{company_id}/groups`: `name` は1文字以上、 `parent` は整数もしくは `null`, `children` は整数リストとする。 Header `X-User-Id` 必須。
-    ```json
-    {
-      "group": {
-        "name": "開発部",
-        "parent": null,
-        "children": [ 2, 3 ]
       }
-    }
-    ```
-  - `GET /company/{company_id}/groups/{group_id}`: Header `X-User-Id` 必須。
-    ```json
-    {
-      "group": {
-        "id": 1,
-        "name": "開発部",
-        "parent": null,
-        "children": [
-          {
-            "id": 2,
-            "name": "第1課",
-            "children": []
-          },
-          {
-            "id": 3,
-            "name": "第2課",
-            "children": []
-          }
-        ]
-      }
-    }
-    ```
-  - `PUT /company/{company_id}/groups/{group_id}`: 更新時の条件は作成時と同じ。 Header `X-User-Id` 必須。
-    ```json
-    {
-      "group": {
-        "name": "開発部",
-        "parent": null,
-        "children": [ 2, 3 ]
-      }
-    }
-    ```
-  - `DELETE /company/{company_id}/groups/{group_id}`: Header `X-User-Id` 必須。
-
-- `/company/{company_id}/titles`: 会社の肩書きを扱う。
-  - `GET /company/{company_id}/titles`: Header `X-User-Id` 必須。
-    ```json
-    {
-      "titles": [
-        {
-          "id": 1,
-          "name": "社長"
-        },
-        {
-          "id": 2,
-          "name": "部長"
-        }
-      ]
-    }
-    ```
-  - `POST /company/{company_id}/titles`: `name` は1文字以上とする。 Header `X-User-Id` 必須。
-    ```json
-    {
-      "title": {
-        "name": "社長"
-      }
-    }
-    ```
-  - `GET /company/{company_id}/titles/{title_id}`: Header `X-User-Id` 必須。
-    ```json
-    {
-      "title": {
-        "id": 1,
-        "name": "社長"
-      }
-    }
-    ```
-  - `PUT /company/{company_id}/titles`: 更新時の条件は作成時と同じ。 Header `X-User-Id` 必須。
-    ```json
-    {
-      "title": {
-        "name": "社長"
-      }
-    }
-    ```
-  - `DELETE /company/{company_id}/titles`: Header `X-User-Id` 必須。
-
-- `/company/{company_id}/roles`: サービスにおける役割を扱う。
-  - `GET /company/{company_id}/roles`: Header `X-User-Id` 必須。
-    ```json
-    {
-      "roles": [
-        {
-          "id": 1,
-          "name": "管理者"
-        }
-      ]
-    }
-    ```
-  - `GET /company/{company_id}/roles/{role_id}`: Header `X-User-Id` 必須。
-    ```json
-    {
-      "role": {
-        "id": 1,
-        "name": "管理者"
-      }
-    }
-    ```
-- `/company/{company_id}/employees`: 会社の従業員情報を扱う。
-  - `GET /company/{company_id}/users`: Header `X-User-Id` 必須。
-    ```json
-    {
-      "employees": [
-        {
+      ```
+    - Response Body
+      ```json
+      {
+        "user": {
           "id": 1,
           "name": "Bob",
           "password": "*****",
-          "roles": [
-            {
-              "id": 1,
-              "name": "管理者"
-            }
-          ],
-          "information": [
-            {
-              "group": {
-                "id": 1,
-                "name": "開発部"
-              },
-              "title": {
-                "id": 2,
-                "name": "部長"
-              }
-            }
-          ]
+          "updated_at": "2006-01-02T15:04:05Z07:00"
         }
-      ]
-    }
-    ```
-  - `POST /company/{company_id}/employees/{user_id}`: `user_id` は Path による指定。
-    `roles` は整数リスト、`group` と `title` はそれぞれ整数。 Header `X-User-Id` 必須。
-    ```json
-    {
-      "employee": {
-        "roles": [ 1 ],
-        "information": [
-          {
-            "group": 1,
-            "title": 2
-          }
-        ]
       }
-    }
-    ```
-  - `GET /company/{company_id}/employees/{user_id}`: Header `X-User-Id` 必須。
-    ```json
-    {
-      "employee": {
-        "id": 1,
-        "name": "Bob",
-        "password": "*****",
-        "roles": [
-          {
-            "id": 1,
-            "name": "管理者"
-          }
-        ],
-        "information": [
-          {
-            "group": {
-              "id": 1,
-              "name": "開発部"
-            },
-            "title": {
-              "id": 2,
-              "name": "部長"
-            }
-          }
-        ]
+      ```
+  - 取得
+    `GET /user/{user_id}`
+    - 条件
+      - `user.password`
+        - 表示内容は伏字(`*****`)固定
+    - Response Body
+      ```json
+      {
+        "user": {
+          "id": 1,
+          "name": "Bob",
+          "password": "*****",
+          "updated_at": "2006-01-02T15:04:05Z07:00"
+        }
       }
-    }
-    ```
-  - `PUT /company/{company_id}/employees/{user_id}`: 更新時の条件は作成時と同じ。 Header `X-User-Id` 必須。
-    ```json
-    {
-      "employee": {
-        "roles": [ 1 ],
-        "information": [
-          {
-            "group": 1,
-            "title": 2
-          }
-        ]
+      ```
+  - 更新
+    `PUT /user/{user_id}`
+    - 条件
+      (登録時と同じ)
+      - `user.name`
+        - 1文字以上、255文字以下
+      - `user.password`
+        - 8文字以上、255文字以下
+        - Responseの `user.password`は伏せ字(`*****`)とする
+    - Request Body
+      ```json
+      {
+        "user": {
+          "name": "Bob",
+          "password": "password"
+        }
       }
-    }
-    ```
-  - `DELETE /company/{company_id}/employees/{user_id}`: Header `X-User-Id` 必須。
+      ```
+    - Response Body
+      ```json
+      {
+        "user": {
+          "id": 1,
+          "name": "Bob",
+          "password": "*****",
+          "updated_at": "2006-01-02T15:04:05Z07:00"
+        }
+      }
+      ```
+  - 削除
+    `DELETE /user/{user_id}`
+    - Response Body
+      ```json
+      {
+        "user": {}
+      }
+      ```
+
+- 会社情報を扱うエンドポイント
+  `/company`
+  - 登録 `POST /company`
+    - 条件
+      - `company.name`
+        - 1文字以上255文字以下
+      - `company.owner_id`
+        - 実在するユーザーID
+    - Request Body
+      ```json
+      {
+        "company": {
+          "name": "GREATE COMPANY",
+          "owner_id": 1
+        }
+      }
+      ```
+    - Response Body
+      ```json
+      {
+        "company": {
+          "id": 1,
+          "name": "GREATE COMPANY",
+          "owner_id": 1,
+          "updated_at": "2006-01-02T15:04:05Z07:00"
+        }
+      }
+      ```
+  - 取得
+    `GET /company/{company_id}`
+    - Response Body
+      ```json
+      {
+        "company": {
+          "id": 1,
+          "name": "GREATE COMPANY",
+          "owner_id": 1,
+          "updated_at": "2006-01-02T15:04:05Z07:00"
+        }
+      }
+      ```
+  - 更新
+    `PUT /company/{company_id}`
+    - 条件
+      (登録時と同じ)
+      - `company.name`
+        - 1文字以上255文字以下
+      - `company.owner_id`
+        - 実在するユーザーID
+    - Request Body
+      ```json
+      {
+        "company": {
+          "name": "GREATE COMPANY",
+          "owner_id": 1
+        }
+      }
+      ```
+    - Response Body
+      ```json
+      {
+        "company": {
+          "id": 1,
+          "name": "GREATE COMPANY",
+          "owner_id": 1,
+          "updated_at": "2006-01-02T15:04:05Z07:00"
+        }
+      }
+      ```
+  - 削除
+    `DELETE /company/{company_id}`
+    - Response Body
+      ```json
+      {
+        "company": {}
+      }
+      ```
 
 ## このリポジトリの使い方
 開発によく使うコマンドは `Makefile` にまとめています。
@@ -328,45 +198,22 @@ I hope you can use it as a reference when implementing the API.
 ### Docker
 開発環境として、`docker comkpose` を利用しています。
 `docker compose` の各サービスの役割は次のとおりです。
-- `api`: API本体。
-- `db`: データベース本体。ここでは `mysql` を使用。
-- `migrate`: データベースのマイグレーションを行うためのコンテナ。
-  ここではマイグレーションツールとして、 `Rails` の `ActiveRecord` を利用している。
-- `gopher`: `go test` や `go fmt` など、 `go` の実行環境用のコンテナ。
+- `api`
+  - API本体
+- `db`
+  - データベース本体
+  - `mysql` を利用しています
+- `migrate`
+  - データベースのマイグレーションを行うためのコンテナ
+  - マイグレーションツールとして、 `Rails` の `ActiveRecord` を利用しています
+- `gopher`
+  - `go test` や `go fmt` など、 `go` の実行環境用のコンテナ
 
-### Dirctories
+### Dirctory Structure
 ```
-.
-├── _e2e
-├── _img
-│   └── initdb.d
-├── _migrate
-│   └── db
-│       └── migrate
-├── cover
-└── src
-    ├── cmd
-    ├── env
-    ├── http-handle
-    │   ├── request
-    │   └── response
-    ├── pkg
-    │   ├── entity
-    │   ├── repository
-    │   └── service
-    └── rdb-repository
-        └── model
+TODO
 ```
-- `src`: API のソースファイル群はここにまとめてあります。
-  - `cmd`: API の `main` 関数がここにあります。
-    このファイルから、 `import` されている `packages` を辿ることで、
-    ファイルの全体像を把握できると思います。
-  - `pkg`: API のコア `package` 群です。
-    `pkg` の内部に配置されているコードは HTTP や RDB について知ることはありません。
-  - `http-handle`: HTTP について集約しています。
-  - `rdb-repository`: RDB (今回は MySQL) について集約しています。
-- `cover`: テストのカバレッジはここに出力されます(git の管理対象外です)。
-- `_migrate`: マイグレーションファイルをまとめてあります。
-- `_img`: `Dockerfile` などをまとめてあります。
-- `_e2e`: `e2e` テストファイルをまとめてあります。
-- `_migrate`: マイグレーションファイルをまとめてあります。
+
+### 実装済みエンドポイント
+- [x] `/user`
+- [ ] `/company`

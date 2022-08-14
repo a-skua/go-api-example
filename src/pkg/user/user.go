@@ -1,45 +1,40 @@
 package user
 
 import (
-	"fmt"
+	"time"
 )
 
 type ID int
 
-func (id ID) Valid() bool {
+func (id ID) valid() bool {
 	return id > 0
 }
 
 type Name string
 
-// Name length ≥ 1
+// 1 ≤ name.length ≤ 255
 func (n Name) valid() bool {
-	return len(n) >= 1
+	return len(n) > 0 && len(n) < 256
 }
 
-type PlainText = string
+type PlainPassword = string
 
 type Password interface {
-	fmt.Stringer
-	Verify(PlainText) bool
+	Verify(PlainPassword) bool
 	Length() int
 	Hash() []byte
 }
 
-const (
-	PasswordMinLength = 8
-	PasswordString    = "*****"
-)
-
-// Password length ≥ 8
+// 8 ≤ password.length ≤ 255
 func validPassword(p Password) bool {
-	return p.Length() >= PasswordMinLength
+	return p.Length() > 7 && p.Length() < 256
 }
 
 type User struct {
-	ID       ID
-	Name     Name
-	Password Password
+	ID        ID
+	Name      Name
+	Password  Password
+	UpdatedAt time.Time
 }
 
 func New(name Name, pw Password) *User {
@@ -49,6 +44,12 @@ func New(name Name, pw Password) *User {
 	}
 }
 
-func (u *User) valid() bool {
+// valid user when create
+func (u *User) validCreate() bool {
 	return u.Name.valid() && validPassword(u.Password)
+}
+
+// vlid user when update
+func (u *User) validUpdate() bool {
+	return u.ID.valid() && u.validCreate()
 }

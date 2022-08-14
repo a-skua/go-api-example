@@ -28,57 +28,37 @@ func NewServer(repo Repository) Server {
 }
 
 func (s *server) Create(u *User) (*User, error) {
-	ok := u.valid()
+	ok := u.validCreate()
 	if !ok {
-		return nil, fmt.Errorf("pkg/user.Create: invalid user")
+		return nil, fmt.Errorf("user.Create: invalid user")
 	}
 
-	u, err := s.repository.UserCreate(u)
-	if err != nil {
-		return nil, fmt.Errorf("pkg/user.Create: %w", err)
-	}
-
-	return u, nil
+	return s.repository.UserCreate(u)
 }
 
 func (s *server) Read(id ID) (*User, error) {
-	ok := id.Valid()
+	ok := id.valid()
 	if !ok {
 		return nil, fmt.Errorf("pkg/user.Read: invalid user_id")
 	}
 
-	u, err := s.repository.UserRead(id)
-	if err != nil {
-		return nil, fmt.Errorf("pkg/user.Read: %w", err)
-	}
-
-	return u, nil
+	return s.repository.UserRead(id)
 }
 
 func (s *server) Update(u *User) (*User, error) {
-	ok := u.ID.Valid() && u.valid()
+	ok := u.validUpdate()
 	if !ok {
 		return nil, fmt.Errorf("pkg/user.Update: invalid user")
 	}
 
-	u, err := s.repository.UserUpdate(u)
-	if err != nil {
-		return nil, fmt.Errorf("pkg/user.Update: %w", err)
-	}
-
-	return u, nil
+	return s.repository.UserUpdate(u)
 }
 
 func (s *server) Delete(id ID) error {
-	ok := id.Valid()
+	ok := id.valid()
 	if !ok {
 		return fmt.Errorf("pkg/user.Delete: invalid user_id")
 	}
 
-	err := s.repository.UserDelete(id)
-	if err != nil {
-		return fmt.Errorf("pkg/user.Delete: %w", err)
-	}
-
-	return nil
+	return s.repository.UserDelete(id)
 }

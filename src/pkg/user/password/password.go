@@ -6,6 +6,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var (
+	generatedPassword = bcrypt.GenerateFromPassword
+	comparePassword   = bcrypt.CompareHashAndPassword
+)
+
 // impl Password
 type password struct {
 	hash   []byte
@@ -13,7 +18,7 @@ type password struct {
 }
 
 func New(plain string) (user.Password, error) {
-	bin, err := bcrypt.GenerateFromPassword([]byte(plain), 10)
+	bin, err := generatedPassword([]byte(plain), 10)
 	if err != nil {
 		return nil, fmt.Errorf("user.NewPassword: %w", err)
 	}
@@ -30,12 +35,8 @@ func FromHash(hash []byte) user.Password {
 	}
 }
 
-func (password) String() string {
-	return user.PasswordString
-}
-
 func (pw *password) Verify(plain string) bool {
-	return bcrypt.CompareHashAndPassword(pw.hash, []byte(plain)) == nil
+	return comparePassword(pw.hash, []byte(plain)) == nil
 }
 
 func (pw *password) Length() int {

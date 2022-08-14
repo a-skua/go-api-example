@@ -2,22 +2,35 @@ package password
 
 import (
 	"api.example.com/pkg/user"
+	"errors"
+	"golang.org/x/crypto/bcrypt"
 	"reflect"
 	"testing"
 )
 
 func TestNew(t *testing.T) {
+	defer func() {
+		generatedPassword = bcrypt.GenerateFromPassword
+	}()
+
 	type test struct {
 		testcase string
+		init     func()
 		in       string
 		wantErr  bool
 	}
 
 	do := func(tt *test) {
 		t.Run(tt.testcase, func(t *testing.T) {
+			tt.init()
+
 			got, err := New(tt.in)
 			if tt.wantErr != (err != nil) {
 				t.Fatalf("want-err=%v, err=%v.", tt.wantErr, err)
+			}
+
+			if tt.wantErr {
+				return
 			}
 
 			if got == nil {
@@ -28,8 +41,18 @@ func TestNew(t *testing.T) {
 
 	tests := []*test{
 		{
+			init:    func() {},
 			in:      "password",
 			wantErr: false,
+		},
+		{
+			init: func() {
+				generatedPassword = func([]byte, int) ([]byte, error) {
+					return nil, errors.New("failed generated")
+				}
+			},
+			in:      "password",
+			wantErr: true,
 		},
 	}
 
@@ -61,36 +84,6 @@ func TestFromHash(t *testing.T) {
 				hash:   []byte("qwerty"),
 				length: 0,
 			},
-		},
-	}
-
-	for _, tt := range tests {
-		do(tt)
-	}
-}
-
-func TestPassword_String(t *testing.T) {
-	type test struct {
-		testcase string
-		password user.Password
-		want     string
-	}
-
-	do := func(tt *test) {
-		t.Run(tt.testcase, func(t *testing.T) {
-			got := tt.password.String()
-			if tt.want != got {
-				t.Fatalf("want=%v, got=%v.", tt.want, got)
-			}
-		})
-	}
-
-	tests := []*test{
-		{
-			password: &password{
-				hash: []byte("password"),
-			},
-			want: user.PasswordString,
 		},
 	}
 

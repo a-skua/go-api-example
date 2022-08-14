@@ -7,6 +7,12 @@ import (
 	"fmt"
 )
 
+type passwordHash []byte
+
+func (ph passwordHash) String() string {
+	return string(ph)
+}
+
 type User interface {
 	Create(DB) error
 	Read(DB) error
@@ -19,7 +25,7 @@ type User interface {
 type user struct {
 	ID        users.ID
 	Name      users.Name
-	Password  []byte
+	Password  passwordHash
 	CreatedAt dateTime
 	UpdatedAt dateTime
 }
@@ -40,9 +46,10 @@ func NewUserFromID(id users.ID) User {
 
 func (u *user) NewEntity() *users.User {
 	return &users.User{
-		ID:       u.ID,
-		Name:     u.Name,
-		Password: password.FromHash(u.Password),
+		ID:        u.ID,
+		Name:      u.Name,
+		Password:  password.FromHash(u.Password),
+		UpdatedAt: u.UpdatedAt,
 	}
 }
 
@@ -57,12 +64,12 @@ func (u *user) Create(tx DB) error {
 		now,
 	)
 	if err != nil {
-		return fmt.Errorf("rdb-repository/model.User.Create: %w", err)
+		return fmt.Errorf("repository/model.User.Create: %w", err)
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return fmt.Errorf("rdb-repository/model.User.Create: %w", err)
+		return fmt.Errorf("repository/model.User.Create: %w", err)
 	}
 
 	u.ID = users.ID(id)
@@ -78,7 +85,7 @@ func (u *user) Read(tx DB) error {
 		u.ID,
 	).Scan(&u.Name, &u.Password, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
-		return fmt.Errorf("rdb-repository/model.User.Read: %w", err)
+		return fmt.Errorf("repository/model.User.Read: %w", err)
 	}
 	return nil
 }

@@ -10,13 +10,16 @@ down:
 cover: test
 	docker compose run --rm gopher go tool cover -html=/go/cover/c.out -o=/go/cover/index.html
 
+init:
+	cp compose.override.yaml.example compose.override.yaml
+
 init-test:
 	docker compose run --rm -e RAILS_ENV=test migrate db:drop
 	docker compose run --rm -e RAILS_ENV=test migrate db:create
 	docker compose run --rm -e RAILS_ENV=test migrate
 
 test:
-	docker compose run --rm gopher go test -cover -coverprofile=/go/cover/c.out ./...
+	docker compose run --rm gopher go test -p 1 -cover -coverprofile=/go/cover/c.out ./...
 
 fmt:
 	docker compose run --rm gopher go fmt ./...

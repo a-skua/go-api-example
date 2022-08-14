@@ -1,7 +1,6 @@
 package handle
 
 import (
-	"api.example.com/pkg/company"
 	"api.example.com/pkg/user"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -9,7 +8,6 @@ import (
 
 type Repository interface {
 	user.Repository
-	company.Repository
 }
 
 func New(r Repository) http.Handler {
@@ -33,28 +31,6 @@ func New(r Repository) http.Handler {
 				user.update(w, r)
 			case http.MethodDelete:
 				user.delete(w, r)
-			default:
-				http.NotFound(w, r)
-			}
-		})
-	}
-
-	{
-		company := newCompanyHandler(company.NewServer(r))
-		mux.HandleFunc("/company", func(w http.ResponseWriter, r *http.Request) {
-			switch r.Method {
-			case http.MethodPost:
-				company.create(w, r)
-			}
-		})
-		mux.HandleFunc("/company/{company_id}", func(w http.ResponseWriter, r *http.Request) {
-			switch r.Method {
-			case http.MethodGet:
-				company.read(w, r)
-			case http.MethodPut:
-				company.update(w, r)
-			case http.MethodDelete:
-				company.delete(w, r)
 			default:
 				http.NotFound(w, r)
 			}
