@@ -2,30 +2,60 @@
 
 ADDR='api:80'
 
-# ユーザー追加
-RESPONSE=$(curl -s -X 'POST' -d '{"user":{"name":"Bob","password":"12345678"}}' "$ADDR/user")
+# ユーザー
+echo "[USER]"
+URI="$ADDR/user"
+echo "\tPOST $URI"
+RESPONSE=$(curl -s -X 'POST' -d '{"user":{"name":"Bob","password":"12345678"}}' "$URI")
+echo $RESPONSE | jq -Cc
+if [ $? -ne 0 ] || [ "$(echo $RESPONSE | jq -r '.error')" != "null" ]; then exit 1; fi
+
 USER_ID=$(echo $RESPONSE | jq -r '.user.id')
-echo "  POST $RESPONSE"
+if [ $USER_ID = "null" ]; then exit 1; fi
 
-RESPONSE=$(curl -s -X 'GET' "$ADDR/user/$USER_ID")
-echo "   GET $RESPONSE"
+URI="$ADDR/user/$USER_ID"
+echo "\tGET $URI"
+RESPONSE=$(curl -s -X 'GET' "$URI")
+echo $RESPONSE | jq -Cc
+if [ $? -ne 0 ] || [ "$(echo $RESPONSE | jq -r '.error')" != "null" ]; then exit 1; fi
 
-RESPONSE=$(curl -s -X 'PUT' -d '{"user":{"name":"Alice","password":"12345678"}}' "$ADDR/user/$USER_ID")
-echo "   PUT $RESPONSE"
+URI=$ADDR/user/$USER_ID
+RESPONSE=$(curl -s -X 'PUT' -d '{"user":{"name":"Alice","password":"12345678"}}' "$URI")
+echo "\tPUT $URI"
+echo $RESPONSE | jq -Cc
+if [ $? -ne 0 ] || [ "$(echo $RESPONSE | jq -r '.error')" != "null" ]; then exit 1; fi
 
-RESPONSE=$(curl -s -X 'DELETE' "$ADDR/user/$USER_ID")
-echo "DELETE $RESPONSE"
+URI=$ADDR/user/$USER_ID
+RESPONSE=$(curl -s -X 'DELETE' "$URI")
+echo "\tDELETE $URI"
+echo $RESPONSE | jq -Cc
+if [ $? -ne 0 ] || [ "$(echo $RESPONSE | jq -r '.error')" != "null" ]; then exit 1; fi
 
-# 企業追加
-RESPONSE=$(curl -s -X 'POST' -d '{"company":{"name":"GREATE COMPANY"}}' "$ADDR/company")
+# 企業
+echo "[COMPANY]"
+URI=$ADDR/company
+echo "\tPOST $URI"
+RESPONSE=$(curl -s -X 'POST' -d '{"company":{"name":"GREATE COMPANY"}}' "$URI")
+echo $RESPONSE | jq -Cc
+if [ $? -ne 0 ] || [ "$(echo $RESPONSE | jq -r '.error')" != "null" ]; then exit 1; fi
+
 COMPANY_ID=$(echo $RESPONSE | jq -r '.company.id')
-echo "  POST $RESPONSE"
+if [ $COMPANY_ID = "null" ]; then exit 1; fi
 
-RESPONSE=$(curl -s -X 'GET' "$ADDR/company/$COMPANY_ID")
-echo "   GET $RESPONSE"
+URI=$ADDR/company/$COMPANY_ID
+echo "\tGET $URI"
+RESPONSE=$(curl -s -X 'GET' "$URI")
+echo $RESPONSE | jq -Cc
+if [ $? -ne 0 ] || [ "$(echo $RESPONSE | jq -r '.error')" != "null" ]; then exit 1; fi
 
-RESPONSE=$(curl -s -X 'PUT' -d '{"company":{"name":"greate company"}}' "$ADDR/company/$COMPANY_ID")
-echo "   PUT $RESPONSE"
+URI=$ADDR/company/$COMPANY_ID
+echo "\tPUT $URI"
+RESPONSE=$(curl -s -X 'PUT' -d '{"company":{"name":"greate company"}}' "$URI")
+echo $RESPONSE | jq -Cc
+if [ $? -ne 0 ] || [ "$(echo $RESPONSE | jq -r '.error')" != "null" ]; then exit 1; fi
 
-RESPONSE=$(curl -s -X 'DELETE' "$ADDR/company/$COMPANY_ID")
-echo "DELETE $RESPONSE"
+URI=$ADDR/company/$COMPANY_ID
+echo "DELETE $URI"
+RESPONSE=$(curl -s -X 'DELETE' "$URI")
+echo $RESPONSE | jq -Cc
+if [ $? -ne 0 ] || [ "$(echo $RESPONSE | jq -r '.error')" != "null" ]; then exit 1; fi

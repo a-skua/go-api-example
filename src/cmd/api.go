@@ -3,6 +3,7 @@ package main
 import (
 	"api.example.com/env"
 	"api.example.com/http-handle"
+	"api.example.com/pkg/user"
 	"api.example.com/repository"
 	"context"
 	"database/sql"
@@ -18,9 +19,6 @@ import (
 // 起動するサーバー本体
 var srv http.Server
 
-// データベース
-var db *sql.DB
-
 // サーバーの初期化
 func init() {
 	addr := env.Get("ADDR")
@@ -28,6 +26,9 @@ func init() {
 
 	srv.Addr = addr.Value()
 }
+
+// データベース
+var db *sql.DB
 
 // データベースの初期化
 func init() {
@@ -56,7 +57,9 @@ func init() {
 
 func main() {
 	defer db.Close()
-	srv.Handler = handle.New(repository.New(db))
+	srv.Handler = handle.New(&handle.Services{
+		User: user.NewServer(repository.New(db)),
+	})
 
 	// 異常終了しないためのおまじない
 	idleConnsClosed := make(chan struct{})

@@ -6,36 +6,17 @@ import (
 	"net/http"
 )
 
-type Repository interface {
-	user.Repository
+type Services struct {
+	User user.Server
 }
 
-func New(r Repository) http.Handler {
+func New(s *Services) http.Handler {
 	mux := mux.NewRouter()
 
-	{
-		user := newUserHandler(user.NewServer(r))
-		mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
-			switch r.Method {
-			case http.MethodPost:
-				user.create(w, r)
-			default:
-				http.NotFound(w, r)
-			}
-		})
-		mux.HandleFunc("/user/{user_id}", func(w http.ResponseWriter, r *http.Request) {
-			switch r.Method {
-			case http.MethodGet:
-				user.read(w, r)
-			case http.MethodPut:
-				user.update(w, r)
-			case http.MethodDelete:
-				user.delete(w, r)
-			default:
-				http.NotFound(w, r)
-			}
-		})
-	}
+	func(user *userHandler) {
+		mux.HandleFunc("/user", user.handleUsers)
+		mux.HandleFunc("/user/{user_id}", user.handleUser)
+	}(newUserHandler(s.User))
 
 	return mux
 }

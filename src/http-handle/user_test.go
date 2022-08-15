@@ -5,7 +5,6 @@ import (
 	"api.example.com/pkg/user/password"
 	"bytes"
 	"errors"
-	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -24,33 +23,33 @@ type userServer struct {
 func (s *userServer) Create(*user.User) (*user.User, error) {
 	if s.create {
 		return s.user, s.err
-	} else {
-		return nil, errors.New("invalid Create")
 	}
+
+	panic("invalid Create")
 }
 
 func (s *userServer) Read(user.ID) (*user.User, error) {
 	if s.read {
 		return s.user, s.err
-	} else {
-		return nil, errors.New("invalid Read")
 	}
+
+	panic("invalid Read")
 }
 
 func (s *userServer) Update(*user.User) (*user.User, error) {
 	if s.update {
 		return s.user, s.err
-	} else {
-		return nil, errors.New("invalid Update")
 	}
+
+	panic("invalid Update")
 }
 
 func (s *userServer) Delete(user.ID) error {
 	if s.delete {
 		return s.err
-	} else {
-		return errors.New("invalid Delete")
 	}
+
+	panic("invalid Delete")
 }
 
 // test
@@ -70,30 +69,32 @@ func TestUserHandler_create(t *testing.T) {
 		testcase string
 		args
 		server user.Server
-		want
+		want   want
 	}
 
 	do := func(tt *test) {
 		t.Run(tt.testcase, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, tt.url, bytes.NewBuffer(tt.args.body))
 			w := httptest.NewRecorder()
-			h := newUserHandler(tt.server)
-			h.create(w, r)
 
-			res := w.Result()
-			defer res.Body.Close()
+			s := newServices()
+			s.User = tt.server
+			New(s).ServeHTTP(w, r)
 
-			gotBody, _ := io.ReadAll(res.Body)
+			got := w.Result()
+			defer got.Body.Close()
+
+			gotBody, _ := io.ReadAll(got.Body)
 			if !reflect.DeepEqual(tt.want.body, gotBody) {
-				t.Fatalf("want=%v, got=%v.", tt.want.body, gotBody)
+				t.Fatalf("want=%s, got=%s.", tt.want.body, gotBody)
 			}
 
-			gotContentType := res.Header.Get("Content-Type")
+			gotContentType := got.Header.Get("Content-Type")
 			if tt.want.contentType != gotContentType {
 				t.Fatalf("want=%v, got=%v.", tt.want.contentType, gotContentType)
 			}
 
-			gotStatusCode := res.StatusCode
+			gotStatusCode := got.StatusCode
 			if tt.want.statusCode != gotStatusCode {
 				t.Fatalf("want=%v, got=%v.", tt.want.statusCode, gotStatusCode)
 			}
@@ -103,7 +104,7 @@ func TestUserHandler_create(t *testing.T) {
 	tests := []*test{
 		{
 			args: args{
-				url:  "/users",
+				url:  "/user",
 				body: []byte(`{"user":{"name":"bob","password":"qwerty"}}`),
 			},
 			server: &userServer{
@@ -123,8 +124,8 @@ func TestUserHandler_create(t *testing.T) {
 		{
 			testcase: "invalid request-body",
 			args: args{
-				url:  "/users",
-				body: []byte{},
+				url:  "/user",
+				body: []byte(`id=1&name=bob&password=qwerty`),
 			},
 			server: &userServer{
 				user: &user.User{
@@ -143,7 +144,7 @@ func TestUserHandler_create(t *testing.T) {
 		{
 			testcase: "failed server-create",
 			args: args{
-				url:  "/users",
+				url:  "/user",
 				body: []byte(`{"user":{"name":"bob","password":"qwerty"}}`),
 			},
 			server: &userServer{
@@ -179,33 +180,32 @@ func TestUserHandler_read(t *testing.T) {
 		testcase string
 		args
 		server user.Server
-		want
+		want   want
 	}
 
 	do := func(tt *test) {
 		t.Run(tt.testcase, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodPost, tt.url, bytes.NewBuffer(tt.args.body))
+			r := httptest.NewRequest(http.MethodGet, tt.url, bytes.NewBuffer(tt.args.body))
 			w := httptest.NewRecorder()
 
-			h := newUserHandler(tt.server)
-			mux := mux.NewRouter()
-			mux.HandleFunc("/user/{user_id}", h.read)
-			mux.ServeHTTP(w, r)
+			s := newServices()
+			s.User = tt.server
+			New(s).ServeHTTP(w, r)
 
-			res := w.Result()
-			defer res.Body.Close()
+			got := w.Result()
+			defer got.Body.Close()
 
-			gotBody, _ := io.ReadAll(res.Body)
+			gotBody, _ := io.ReadAll(got.Body)
 			if !reflect.DeepEqual(tt.want.body, gotBody) {
-				t.Fatalf("want=%v, got=%v.", tt.want.body, gotBody)
+				t.Fatalf("want=%s, got=%s.", tt.want.body, gotBody)
 			}
 
-			gotContentType := res.Header.Get("Content-Type")
+			gotContentType := got.Header.Get("Content-Type")
 			if tt.want.contentType != gotContentType {
 				t.Fatalf("want=%v, got=%v.", tt.want.contentType, gotContentType)
 			}
 
-			gotStatusCode := res.StatusCode
+			gotStatusCode := got.StatusCode
 			if tt.want.statusCode != gotStatusCode {
 				t.Fatalf("want=%v, got=%v.", tt.want.statusCode, gotStatusCode)
 			}
@@ -296,28 +296,27 @@ func TestUserHandler_update(t *testing.T) {
 
 	do := func(tt *test) {
 		t.Run(tt.testcase, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodPost, tt.url, bytes.NewBuffer(tt.args.body))
+			r := httptest.NewRequest(http.MethodPut, tt.url, bytes.NewBuffer(tt.args.body))
 			w := httptest.NewRecorder()
 
-			h := newUserHandler(tt.server)
-			mux := mux.NewRouter()
-			mux.HandleFunc("/user/{user_id}", h.update)
-			mux.ServeHTTP(w, r)
+			s := newServices()
+			s.User = tt.server
+			New(s).ServeHTTP(w, r)
 
-			res := w.Result()
-			defer res.Body.Close()
+			got := w.Result()
+			defer got.Body.Close()
 
-			gotBody, _ := io.ReadAll(res.Body)
+			gotBody, _ := io.ReadAll(got.Body)
 			if !reflect.DeepEqual(tt.want.body, gotBody) {
-				t.Fatalf("want=%v, got=%v.", tt.want.body, gotBody)
+				t.Fatalf("want=%s, got=%s.", tt.want.body, gotBody)
 			}
 
-			gotContentType := res.Header.Get("Content-Type")
+			gotContentType := got.Header.Get("Content-Type")
 			if tt.want.contentType != gotContentType {
 				t.Fatalf("want=%v, got=%v.", tt.want.contentType, gotContentType)
 			}
 
-			gotStatusCode := res.StatusCode
+			gotStatusCode := got.StatusCode
 			if tt.want.statusCode != gotStatusCode {
 				t.Fatalf("want=%v, got=%v.", tt.want.statusCode, gotStatusCode)
 			}
@@ -403,33 +402,32 @@ func TestUserHandler_delete(t *testing.T) {
 		testcase string
 		args
 		server user.Server
-		want
+		want   want
 	}
 
 	do := func(tt *test) {
 		t.Run(tt.testcase, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodPost, tt.url, bytes.NewBuffer(tt.args.body))
+			r := httptest.NewRequest(http.MethodDelete, tt.url, bytes.NewBuffer(tt.args.body))
 			w := httptest.NewRecorder()
 
-			h := newUserHandler(tt.server)
-			mux := mux.NewRouter()
-			mux.HandleFunc("/user/{user_id}", h.delete)
-			mux.ServeHTTP(w, r)
+			s := newServices()
+			s.User = tt.server
+			New(s).ServeHTTP(w, r)
 
-			res := w.Result()
-			defer res.Body.Close()
+			got := w.Result()
+			defer got.Body.Close()
 
-			gotBody, _ := io.ReadAll(res.Body)
+			gotBody, _ := io.ReadAll(got.Body)
 			if !reflect.DeepEqual(tt.want.body, gotBody) {
 				t.Fatalf("want=%v, got=%v.", tt.want.body, gotBody)
 			}
 
-			gotContentType := res.Header.Get("Content-Type")
+			gotContentType := got.Header.Get("Content-Type")
 			if tt.want.contentType != gotContentType {
 				t.Fatalf("want=%v, got=%v.", tt.want.contentType, gotContentType)
 			}
 
-			gotStatusCode := res.StatusCode
+			gotStatusCode := got.StatusCode
 			if tt.want.statusCode != gotStatusCode {
 				t.Fatalf("want=%v, got=%v.", tt.want.statusCode, gotStatusCode)
 			}

@@ -211,7 +211,17 @@ I hope you can use it as a reference when implementing the API.
 
 ### Dirctory Structure
 ```
-TODO
+.
+├── _e2e            # E2Eテスト
+├── _img            # Docker Images
+├── _migrate        # データベース Migration
+├── cover           # Coverage出力
+└── src
+    ├── cmd         # package main
+    ├── env         #
+    ├── http-handle # HTTPハンドラ
+    ├── pkg         # メインプログラム
+    └── repository  # データベース
 ```
 
 ### 実装済みエンドポイント

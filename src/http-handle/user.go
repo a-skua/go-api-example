@@ -16,6 +16,28 @@ func newUserHandler(s user.Server) *userHandler {
 	return &userHandler{s}
 }
 
+func (h *userHandler) handleUsers(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		h.create(w, r)
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+func (h *userHandler) handleUser(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		h.read(w, r)
+	case http.MethodPut:
+		h.update(w, r)
+	case http.MethodDelete:
+		h.delete(w, r)
+	default:
+		http.NotFound(w, r)
+	}
+}
+
 func (h *userHandler) create(w http.ResponseWriter, r *http.Request) {
 	user, err := request.UserCreate(r)
 	if err != nil {
