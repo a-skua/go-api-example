@@ -3,6 +3,7 @@ package main
 import (
 	"api.example.com/env"
 	"api.example.com/http-handle"
+	"api.example.com/pkg/company"
 	"api.example.com/pkg/user"
 	"api.example.com/repository"
 	"context"
@@ -57,8 +58,10 @@ func init() {
 
 func main() {
 	defer db.Close()
+	repository := repository.New(db)
 	srv.Handler = handle.New(&handle.Services{
-		User: user.NewServer(repository.New(db)),
+		User:    user.NewServer(repository),
+		Company: company.NewServer(repository),
 	})
 
 	// 異常終了しないためのおまじない

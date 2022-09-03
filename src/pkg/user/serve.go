@@ -37,7 +37,7 @@ func (s *server) Create(u *User) (*User, error) {
 }
 
 func (s *server) Read(id ID) (*User, error) {
-	ok := id.valid()
+	ok := id.Valid()
 	if !ok {
 		return nil, fmt.Errorf("pkg/user.Read: invalid user_id")
 	}
@@ -55,7 +55,7 @@ func (s *server) Update(u *User) (*User, error) {
 }
 
 func (s *server) Delete(id ID) error {
-	ok := id.valid()
+	ok := id.Valid()
 	if !ok {
 		return fmt.Errorf("pkg/user.Delete: invalid user_id")
 	}

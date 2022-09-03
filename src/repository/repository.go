@@ -1,6 +1,7 @@
 package repository
 
 import (
+	companies "api.example.com/pkg/company"
 	users "api.example.com/pkg/user"
 	"api.example.com/repository/model"
 	"database/sql"
@@ -21,6 +22,7 @@ type Transaction interface {
 
 type Repository interface {
 	users.Repository
+	companies.Repository
 	Close() error
 }
 
@@ -67,4 +69,13 @@ func (r *repository) UserDelete(id users.ID) error {
 	}
 
 	return UserDelete(tx, model.NewUserFromID(id))
+}
+
+func (r *repository) CompanyCreate(c *companies.Company) (*companies.Company, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("repository.CompanyCreate: %w", err)
+	}
+
+	return companyCreate(tx, model.NewCompany(c))
 }

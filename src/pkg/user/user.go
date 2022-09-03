@@ -6,7 +6,7 @@ import (
 
 type ID int
 
-func (id ID) valid() bool {
+func (id ID) Valid() bool {
 	return id > 0
 }
 
@@ -51,5 +51,5 @@ func (u *User) validCreate() bool {
 
 // vlid user when update
 func (u *User) validUpdate() bool {
-	return u.ID.valid() && u.validCreate()
+	return u.ID.Valid() && u.validCreate()
 }

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"api.example.com/env"
+	companies "api.example.com/pkg/company"
 	users "api.example.com/pkg/user"
 	"api.example.com/pkg/user/password"
 	"api.example.com/repository/model"
@@ -505,6 +506,72 @@ func TestRepository_UserDelete(t *testing.T) {
 				wantErr: true,
 			}
 		}(),
+	}
+
+	for _, tt := range tests {
+		do(tt)
+	}
+}
+
+func TestRepository_CompanyCreate(t *testing.T) {
+	t.Skip("TODO OwnerID")
+
+	tableLock.Lock()
+	defer tableLock.Unlock()
+
+	db := newDB()
+	defer db.Close()
+	defer db.Exec("delete from companies")
+
+	type test struct {
+		name    string
+		db      DB
+		company *companies.Company
+		want    *companies.Company
+		wantErr bool
+	}
+
+	do := func(tt *test) {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := (&repository{tt.db}).CompanyCreate(tt.company)
+			if tt.wantErr != (err != nil) {
+				t.Fatalf("want-error=%v, error=%v.", tt.wantErr, err)
+			}
+
+			if tt.wantErr {
+				return
+			}
+
+			wantTime := time.Now()
+
+			tt.want.ID = got.ID
+			testDiffTime(t, wantTime, got.UpdatedAt)
+			tt.want.UpdatedAt = got.UpdatedAt
+
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want=%v, got=%v.", tt.want, got)
+			}
+		})
+	}
+
+	tests := []*test{
+		{
+			name:    "ok",
+			db:      db,
+			company: companies.New("GREATE COMPANY", 1),
+			want:    companies.New("GREATE COMPANY", 0), // TODO
+			wantErr: false,
+		},
+		{
+			name: "failed begin-transaction",
+			db: &mockDB{
+				err:   errors.New("test error"),
+				begin: true,
+			},
+			company: companies.New("GREATE COMPANY", 1),
+			want:    nil,
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

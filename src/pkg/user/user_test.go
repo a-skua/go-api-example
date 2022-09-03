@@ -31,7 +31,7 @@ func (pw *password) Hash() []byte {
 	return []byte(pw.hash)
 }
 
-func TestID_valid(t *testing.T) {
+func TestID_Valid(t *testing.T) {
 	type test struct {
 		name string
 		id   ID
@@ -40,7 +40,7 @@ func TestID_valid(t *testing.T) {
 
 	do := func(tt *test) {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.id.valid()
+			got := tt.id.Valid()
 			if tt.want != got {
 				t.Fatalf("want=%v, got=%v.", tt.want, got)
 			}

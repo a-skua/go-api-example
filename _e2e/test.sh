@@ -35,7 +35,7 @@ if [ $? -ne 0 ] || [ "$(echo $RESPONSE | jq -r '.error')" != "null" ]; then exit
 echo "[COMPANY]"
 URI=$ADDR/company
 echo "\tPOST $URI"
-RESPONSE=$(curl -s -X 'POST' -d '{"company":{"name":"GREATE COMPANY"}}' "$URI")
+RESPONSE=$(curl -s -X 'POST' -d '{"company":{"name":"GREATE COMPANY","owner_id":1}}' "$URI")
 echo $RESPONSE | jq -Cc
 if [ $? -ne 0 ] || [ "$(echo $RESPONSE | jq -r '.error')" != "null" ]; then exit 1; fi
 
@@ -50,7 +50,7 @@ if [ $? -ne 0 ] || [ "$(echo $RESPONSE | jq -r '.error')" != "null" ]; then exit
 
 URI=$ADDR/company/$COMPANY_ID
 echo "\tPUT $URI"
-RESPONSE=$(curl -s -X 'PUT' -d '{"company":{"name":"greate company"}}' "$URI")
+RESPONSE=$(curl -s -X 'PUT' -d '{"company":{"name":"greate company","owner_id":2}}' "$URI")
 echo $RESPONSE | jq -Cc
 if [ $? -ne 0 ] || [ "$(echo $RESPONSE | jq -r '.error')" != "null" ]; then exit 1; fi
 
