@@ -1,10 +1,11 @@
 package handle
 
 import (
+	"net/http"
+
 	"api.example.com/pkg/company"
 	"api.example.com/pkg/user"
 	"github.com/gorilla/mux"
-	"net/http"
 )
 
 type Services struct {
@@ -22,6 +23,7 @@ func New(s *Services) http.Handler {
 
 	func(company *companyHandler) {
 		mux.HandleFunc("/company", company.handleCompanies)
+		mux.HandleFunc("/company/{company_id}", company.handleCompany)
 	}(newCompanyHandler(s.Company))
 
 	return mux

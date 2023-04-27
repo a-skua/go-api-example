@@ -2,14 +2,17 @@ package company
 
 import (
 	"errors"
+	"fmt"
 )
 
 type Repository interface {
 	CompanyCreate(*Company) (*Company, error)
+	CompanyRead(ID) (*Company, error)
 }
 
 type Server interface {
 	Create(*Company) (*Company, error)
+	Read(ID) (*Company, error)
 }
 
 // impl Server
@@ -27,4 +30,14 @@ func (s *server) Create(c *Company) (*Company, error) {
 	}
 
 	return s.repository.CompanyCreate(c)
+}
+
+func (s *server) Read(id ID) (*Company, error) {
+	ok := id.Valid()
+
+	if !ok {
+		return nil, fmt.Errorf("pkg/comopany.Read: invalid company_id")
+	}
+
+	return s.repository.CompanyRead(id)
 }

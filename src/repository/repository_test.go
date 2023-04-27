@@ -1,21 +1,22 @@
 package repository
 
 import (
-	"api.example.com/env"
-	companies "api.example.com/pkg/company"
-	users "api.example.com/pkg/user"
-	"api.example.com/pkg/user/password"
-	"api.example.com/repository/model"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"math"
 	"reflect"
 	"sync"
 	"testing"
 	"time"
+
+	"api.example.com/env"
+	companies "api.example.com/pkg/company"
+	users "api.example.com/pkg/user"
+	"api.example.com/pkg/user/password"
+	"api.example.com/repository/model"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var tableLock sync.Mutex
@@ -572,6 +573,72 @@ func TestRepository_CompanyCreate(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+	}
+
+	for _, tt := range tests {
+		do(tt)
+	}
+}
+
+func TestRepository_CompanyRead(t *testing.T) {
+	tableLock.Lock()
+	defer tableLock.Unlock()
+
+	db := newDB()
+	repo := New(db).(*repository)
+	defer db.Close()
+	defer db.Exec("delete from companies")
+
+	type test struct {
+		name    string
+		id      companies.ID
+		want    *companies.Company
+		wantErr bool
+	}
+
+	do := func(tt *test) {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := repo.CompanyRead(tt.id)
+			if tt.wantErr != (err != nil) {
+				t.Fatalf("want-error=%v, error=%v.", tt.wantErr, err)
+			}
+
+			if tt.wantErr {
+				return
+			}
+
+			wantTime := time.Now()
+
+			testDiffTime(t, wantTime, got.UpdatedAt)
+			tt.want.UpdatedAt = got.UpdatedAt
+
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want=%v, got=%v.", tt.want, got)
+			}
+		})
+	}
+
+	tests := []*test{
+		func() *test {
+			model := model.NewCompany(companies.New("testCompany", 1))
+			err := model.Create(repo.db)
+			if err != nil {
+				panic(err)
+			}
+
+			entity := model.NewEntity()
+
+			return &test{
+				name: "true",
+				id:   entity.ID,
+				want: &companies.Company{
+					ID:      entity.ID,
+					Name:    "testCompany",
+					OwnerID: entity.OwnerID,
+				},
+				wantErr: false,
+			}
+		}(),
 	}
 
 	for _, tt := range tests {

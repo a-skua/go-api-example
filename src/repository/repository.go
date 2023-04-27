@@ -1,11 +1,12 @@
 package repository
 
 import (
+	"database/sql"
+	"fmt"
+
 	companies "api.example.com/pkg/company"
 	users "api.example.com/pkg/user"
 	"api.example.com/repository/model"
-	"database/sql"
-	"fmt"
 )
 
 type DB interface {
@@ -78,4 +79,8 @@ func (r *repository) CompanyCreate(c *companies.Company) (*companies.Company, er
 	}
 
 	return companyCreate(tx, model.NewCompany(c))
+}
+
+func (r *repository) CompanyRead(id companies.ID) (*companies.Company, error) {
+	return companyRead(r.db, model.NewCompanyFromID(id))
 }

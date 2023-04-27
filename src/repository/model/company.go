@@ -1,13 +1,15 @@
 package model
 
 import (
-	companies "api.example.com/pkg/company"
 	"context"
 	"fmt"
+
+	companies "api.example.com/pkg/company"
 )
 
 type Company interface {
 	Create(DB) error
+	Read(DB) error
 	NewEntity() *companies.Company
 }
 
@@ -23,6 +25,12 @@ type company struct {
 func NewCompany(c *companies.Company) Company {
 	return &company{
 		name: c.Name,
+	}
+}
+
+func NewCompanyFromID(id companies.ID) Company {
+	return &company{
+		id: id,
 	}
 }
 
@@ -47,6 +55,20 @@ func (c *company) Create(tx DB) error {
 	c.id = companies.ID(id)
 	c.createdAt = now
 	c.updatedAt = now
+	return nil
+}
+
+func (c *company) Read(tx DB) error {
+	err := tx.QueryRowContext(
+		context.TODO(),
+		"select `id`, `name`, `created_at`, `updated_at` from `companies` where `id`=?",
+		c.id,
+	).Scan(&c.id, &c.name, &c.createdAt, &c.updatedAt)
+
+	if err != nil {
+		return fmt.Errorf("repository/model.Company.Read: %w", err)
+	}
+
 	return nil
 }
 
