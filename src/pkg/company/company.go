@@ -1,8 +1,9 @@
 package company
 
 import (
-	"api.example.com/pkg/user"
 	"time"
+
+	"api.example.com/pkg/user"
 )
 
 // Company ID
@@ -17,6 +18,10 @@ type Name string
 func (n Name) valid() bool {
 	l := len(n)
 	return l > 0 && l < 256
+}
+
+func (id ID) Valid() bool {
+	return id > 0
 }
 
 type Company struct {

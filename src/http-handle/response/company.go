@@ -1,10 +1,13 @@
 package response
 
 import (
-	companies "api.example.com/pkg/company"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
+
+	"api.example.com/pkg/company"
+	companies "api.example.com/pkg/company"
 )
 
 func WriteCompany(w http.ResponseWriter, company *companies.Company) error {
@@ -28,4 +31,13 @@ func WriteCompany(w http.ResponseWriter, company *companies.Company) error {
 
 	writeHeader(w)
 	return json.NewEncoder(w).Encode(&body)
+}
+
+func CompanyRead(w http.ResponseWriter, c *company.Company) error {
+	err := WriteCompany(w, c)
+	if err != nil {
+		return fmt.Errorf("http-handle/response.CompanyRead: %w", err)
+	}
+
+	return nil
 }

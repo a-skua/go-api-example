@@ -1,7 +1,6 @@
 package handle
 
 import (
-	"api.example.com/pkg/company"
 	"bytes"
 	"errors"
 	"io"
@@ -10,6 +9,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"api.example.com/pkg/company"
 )
 
 // mock
@@ -18,6 +19,7 @@ type companyServer struct {
 	err     error
 	// flag
 	create bool
+	read   bool
 	// test
 	t *testing.T
 }
@@ -33,6 +35,16 @@ func (s *companyServer) Create(*company.Company) (*company.Company, error) {
 	}
 	s.t.Fatal("invalid Create")
 	panic("invalid Create")
+}
+
+func (s *companyServer) Read(company.ID) (*company.Company, error) {
+	// s.t.Helper()
+
+	if s.read {
+		return s.company, s.err
+	}
+
+	panic("invalid Read")
 }
 
 func TestCompanyHanlder_create(t *testing.T) {
@@ -142,6 +154,119 @@ func TestCompanyHanlder_create(t *testing.T) {
 			},
 			want: want{
 				statusCode:  500,
+				contentType: "application/json",
+				body:        []byte(`{"error":{}}` + "\n"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		do(tt)
+	}
+}
+
+func TestCompanyHandler_read(t *testing.T) {
+	type args struct {
+		url  string
+		body []byte
+	}
+
+	type want struct {
+		statusCode  int
+		contentType string
+		body        []byte
+	}
+
+	type test struct {
+		testcase string
+		args
+		server company.Server
+		want   want
+	}
+
+	do := func(tt *test) {
+		t.Run(tt.testcase, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, tt.url, bytes.NewBuffer(tt.args.body))
+			w := httptest.NewRecorder()
+
+			s := newServices()
+			s.Company = tt.server
+			New(s).ServeHTTP(w, r)
+
+			got := w.Result()
+			defer got.Body.Close()
+
+			gotBody, _ := io.ReadAll(got.Body)
+			if !reflect.DeepEqual(tt.want.body, gotBody) {
+				t.Fatalf("want=%s, got=%s.", tt.want.body, gotBody)
+			}
+
+			gotContentType := got.Header.Get("Content-Type")
+			if tt.want.contentType != gotContentType {
+				t.Fatalf("want=%v, got-%v.", tt.want.contentType, gotContentType)
+			}
+
+			gotStatusCode := got.StatusCode
+			if tt.want.statusCode != gotStatusCode {
+				t.Fatalf("want=%v, got=%v.", tt.want.statusCode, gotStatusCode)
+			}
+		})
+	}
+
+	tests := []*test{
+		{
+			args: args{
+				url:  "http://api.example.com/company/1",
+				body: []byte{},
+			},
+			server: &companyServer{
+				company: &company.Company{
+					ID:        1,
+					Name:      "testCompany",
+					OwnerID:   1,
+					UpdatedAt: time.Date(2022, 9, 3, 12, 34, 56, 0, time.UTC),
+				},
+				read: true,
+			},
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "application/json",
+				body:        []byte(`{"company":{"id":1,"name":"testCompany","owner_id":1,"updated_at":"2022-09-03T12:34:56Z"}}` + "\n"),
+			},
+		},
+		{
+			testcase: "invalid company_id",
+			args: args{
+				url:  "http://api.example.com/company/xxx",
+				body: []byte{},
+			},
+			server: &companyServer{
+				company: &company.Company{
+					ID:        1,
+					Name:      "testCompany",
+					OwnerID:   1,
+					UpdatedAt: time.Date(2022, 9, 3, 12, 34, 56, 0, time.UTC),
+				},
+				read: true,
+			},
+			want: want{
+				statusCode:  http.StatusInternalServerError,
+				contentType: "application/json",
+				body:        []byte(`{"error":{}}` + "\n"),
+			},
+		},
+		{
+			testcase: "failed server-read",
+			args: args{
+				url:  "http://api.example.com/company/1",
+				body: []byte{},
+			},
+			server: &companyServer{
+				err:  errors.New("internal server error"),
+				read: true,
+			},
+			want: want{
+				statusCode:  http.StatusInternalServerError,
 				contentType: "application/json",
 				body:        []byte(`{"error":{}}` + "\n"),
 			},

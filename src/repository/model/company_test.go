@@ -1,11 +1,12 @@
 package model
 
 import (
-	companies "api.example.com/pkg/company"
 	"errors"
 	"reflect"
 	"testing"
 	"time"
+
+	companies "api.example.com/pkg/company"
 )
 
 func TestNewCompany(t *testing.T) {
@@ -170,6 +171,107 @@ func TestCompany_NewEntity(t *testing.T) {
 				// TODO OwnerID
 				UpdatedAt: time.Date(2022, 9, 3, 12, 34, 56, 0, time.UTC),
 			},
+		},
+	}
+
+	for _, tt := range tests {
+		do(tt)
+	}
+}
+
+func TestCompany_NewCompanyFromId(t *testing.T) {
+	type test struct {
+		name string
+		id   companies.ID
+		want Company
+	}
+
+	do := func(tt *test) {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewCompanyFromID(tt.id)
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want=%v, got=%v.", tt.want, got)
+			}
+		})
+	}
+
+	tests := []*test{
+		{
+			name: "OK",
+			id:   companies.ID(1),
+			want: &company{
+				id: 1,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		do(tt)
+	}
+}
+
+func TestCompany_Read(t *testing.T) {
+	tableLock.Lock()
+	defer tableLock.Unlock()
+
+	db := newDB()
+	defer db.Close()
+	defer db.Exec("delete from companies")
+
+	type test struct {
+		name    string
+		db      DB
+		id      companies.ID
+		want    *company
+		wantErr bool
+	}
+
+	do := func(tt *test) {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewCompanyFromID(tt.id).(*company)
+			err := got.Read(tt.db)
+			if tt.wantErr != (err != nil) {
+				t.Fatalf("want-error=%v, error=%v.", tt.wantErr, err)
+			}
+
+			if tt.wantErr {
+				return
+			}
+
+			testDiffTime(t, tt.want.createdAt, got.createdAt)
+			tt.want.createdAt = got.createdAt
+			testDiffTime(t, tt.want.updatedAt, got.updatedAt)
+			tt.want.updatedAt = got.updatedAt
+
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want=%v, got=%v.", tt.want, got)
+			}
+		})
+	}
+
+	tests := []*test{
+		func() *test {
+			model := NewCompany(companies.New("testCompany", 1)).(*company)
+			err := model.Create(db)
+
+			if err != nil {
+				panic(err)
+			}
+
+			return &test{
+				name:    "true",
+				db:      db,
+				id:      model.id,
+				want:    model,
+				wantErr: false,
+			}
+		}(),
+		{
+			name:    "failed scan",
+			db:      db,
+			id:      0,
+			want:    nil,
+			wantErr: true,
 		},
 	}
 

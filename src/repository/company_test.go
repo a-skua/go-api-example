@@ -1,12 +1,13 @@
 package repository
 
 import (
-	companies "api.example.com/pkg/company"
-	"api.example.com/repository/model"
 	"errors"
 	"reflect"
 	"testing"
 	"time"
+
+	companies "api.example.com/pkg/company"
+	"api.example.com/repository/model"
 )
 
 type makeModelCompany func(*testing.T) model.Company
@@ -16,7 +17,7 @@ type modelCompany struct {
 	entity *companies.Company
 	err    error
 	// flags
-	create, newEntity bool
+	create, read, newEntity bool
 	// test
 	t *testing.T
 }
@@ -29,6 +30,16 @@ func (c *modelCompany) Create(tx model.DB) error {
 
 	c.t.Fatal("invalid Create")
 	panic("invalid Create")
+}
+
+func (c *modelCompany) Read(tx model.DB) error {
+	c.t.Helper()
+	if c.read {
+		return c.err
+	}
+
+	c.t.Fatal("invalid Read")
+	panic("invalid Read")
 }
 
 func (c *modelCompany) NewEntity() *companies.Company {
@@ -116,6 +127,72 @@ func TestCompanyCreate(t *testing.T) {
 				return &modelCompany{
 					create: true,
 					t:      t,
+				}
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		do(tt)
+	}
+}
+
+func TestCompanyRead(t *testing.T) {
+	type test struct {
+		name        string
+		db          DB
+		makeCompany makeModelCompany
+		want        *companies.Company
+		wantErr     bool
+	}
+
+	do := func(tt *test) {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := companyRead(tt.db, tt.makeCompany(t))
+			if tt.wantErr != (err != nil) {
+				t.Fatalf("want-error=%v, error=%v.", tt.wantErr, err)
+			}
+
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Fatalf("want=%v, got=%v.", tt.wantErr, got)
+			}
+		})
+	}
+
+	tests := []*test{
+		{
+			name: "ok",
+			db:   &mockDB{},
+			makeCompany: func(t *testing.T) model.Company {
+				return &modelCompany{
+					entity: &companies.Company{
+						ID:        1,
+						Name:      "testCompany",
+						OwnerID:   1,
+						UpdatedAt: time.Date(2022, 9, 3, 12, 34, 56, 0, time.UTC),
+					},
+					read:      true,
+					newEntity: true,
+					t:         t,
+				}
+			},
+			want: &companies.Company{
+				ID:        1,
+				Name:      "testCompany",
+				OwnerID:   1,
+				UpdatedAt: time.Date(2022, 9, 3, 12, 34, 56, 0, time.UTC),
+			},
+		},
+		{
+			name: "failed read",
+			db:   &mockDB{},
+			makeCompany: func(t *testing.T) model.Company {
+				return &modelCompany{
+					err:  errors.New("test error"),
+					read: true,
+					t:    t,
 				}
 			},
 			want:    nil,
